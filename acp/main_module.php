@@ -8,7 +8,7 @@
 
 namespace linkguarder\activitycontrol\acp;
 
-class acp_activitycontrol_module
+class main_module
 {
     public $u_action;
 
