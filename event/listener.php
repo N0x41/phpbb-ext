@@ -239,7 +239,7 @@ class listener implements EventSubscriberInterface
     {
         $user_id = $event->get_user_id();
         $this->ensure_groups_exist();
-        $this->group_helper->add_user_to_group_by_name($user_id, 'AC - Utilisateurs restreints');
+        $this->add_user_to_group_by_name($user_id, 'AC - Utilisateurs restreints');
         $this->log_action('user_added_to_restricted_group', ['user_id' => $user_id]);
     }
 
@@ -279,11 +279,11 @@ class listener implements EventSubscriberInterface
         // Supprimer de tous les groupes AC
         $ac_groups = ['AC - Utilisateurs restreints', 'AC - Utilisateurs partiellement vérifiés', 'AC - Utilisateurs vérifiés'];
         foreach ($ac_groups as $group_name) {
-            $this->group_helper->remove_user_from_group_by_name($user_id, $group_name);
+            $this->remove_user_from_group_by_name($user_id, $group_name);
         }
         
         // Ajouter au nouveau groupe
-        $this->group_helper->add_user_to_group_by_name($user_id, $new_group);
+        $this->add_user_to_group_by_name($user_id, $new_group);
         
         $this->log_action('user_group_updated', [
             'user_id' => $user_id,
@@ -394,6 +394,50 @@ class listener implements EventSubscriberInterface
 		$this->template->assign_vars([
 			'U_DEMO_PAGE'	=> $this->helper->route('linkguarder_activitycontrol_controller', array('name' => 'world')),
 		]);
+    }
+
+    /**
+     * Ajoute un utilisateur à un groupe par nom
+     */
+    private function add_user_to_group_by_name($user_id, $group_name)
+    {
+        // Récupérer l'ID du groupe
+        $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
+        $result = $this->db->sql_query($sql);
+        $group_id = $this->db->sql_fetchfield('group_id');
+        $this->db->sql_freeresult($result);
+
+        if ($group_id) {
+            // Vérifier si l'utilisateur n'est pas déjà dans ce groupe
+            $sql = 'SELECT user_id FROM ' . USER_GROUP_TABLE . ' WHERE user_id = ' . (int) $user_id . ' AND group_id = ' . (int) $group_id;
+            $result = $this->db->sql_query($sql);
+            $exists = $this->db->sql_fetchfield('user_id');
+            $this->db->sql_freeresult($result);
+
+            if (!$exists) {
+                // Ajouter l'utilisateur au groupe
+                $sql = 'INSERT INTO ' . USER_GROUP_TABLE . ' (user_id, group_id, user_pending) VALUES (' . (int) $user_id . ', ' . (int) $group_id . ', 0)';
+                $this->db->sql_query($sql);
+            }
+        }
+    }
+
+    /**
+     * Supprime un utilisateur d'un groupe par nom
+     */
+    private function remove_user_from_group_by_name($user_id, $group_name)
+    {
+        // Récupérer l'ID du groupe
+        $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
+        $result = $this->db->sql_query($sql);
+        $group_id = $this->db->sql_fetchfield('group_id');
+        $this->db->sql_freeresult($result);
+
+        if ($group_id) {
+            // Supprimer l'utilisateur du groupe
+            $sql = 'DELETE FROM ' . USER_GROUP_TABLE . ' WHERE user_id = ' . (int) $user_id . ' AND group_id = ' . (int) $group_id;
+            $this->db->sql_query($sql);
+        }
     }
     
     /**
