@@ -53,7 +53,7 @@ class listener implements EventSubscriberInterface
 	{
 		$lang_set_ext = $event['lang_set_ext'];
 		$lang_set_ext[] = array(
-			'ext_name' => 'linkguarder/activityguard',
+			'ext_name' => 'linkguarder/activitycontrol',
 			'lang_set' => 'common',
 		);
 		$event['lang_set_ext'] = $lang_set_ext;
