@@ -31,14 +31,13 @@ class main_module
         // Informations générales sur la page
         $user->add_lang_ext('linkguarder/activitycontrol', 'common');
         $this->tpl_name = 'acp_activitycontrol_body';
-        $logo_html = '<img src="/ext/linkguarder/activitycontrol/styles/prosilver/theme/images/logo.png" alt="" style="height: 24px; vertical-align: middle; margin-right: 5px;" />';
         $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_SETTINGS'];
         add_form_key('linkguarder/activitycontrol');
 
         switch ($mode)
         {
             case 'settings':
-                $this->page_title = $logo_html . $user->lang['ACP_ACTIVITY_CONTROL_SETTINGS'];
+                $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_SETTINGS'];
                 $this->tpl_name = 'acp_activitycontrol_body';
 
                 if ($request->is_set_post('submit')) {

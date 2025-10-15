@@ -58,6 +58,8 @@ class listener implements EventSubscriberInterface
             'core.ucp_profile_info_modify_sql_ary' => 'process_profile_and_signature',
             'core.member_register_after'        => 'set_initial_group',
             'core.submit_post_end'              => 'update_user_group_status',
+            'core.acp_page_header'              => 'load_acp_stylesheet',
+            'core.mcp_page_header'              => 'load_mcp_stylesheet',
         ];
     }
 
@@ -97,7 +99,25 @@ class listener implements EventSubscriberInterface
                 $event->set_data($post_data);
             }
         }
-    }/**
+    }
+
+    /**
+     * Charge la feuille de style pour l'ACP
+     */
+    public function load_acp_stylesheet($event)
+    {
+        $this->template->link_stylesheet('@linkguarder_activitycontrol/acp.css');
+    }
+
+    /**
+     * Charge la feuille de style pour le MCP
+     */
+    public function load_mcp_stylesheet($event)
+    {
+        $this->template->link_stylesheet('@linkguarder_activitycontrol/mcp.css');
+    }
+    
+    /**
      * Traite le contenu de la signature et du profil
      */
     public function process_profile_and_signature($event)

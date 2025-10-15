@@ -1,0 +1,8 @@
+/* MCP Menu Icon for Activity Control */
+#navigation a[href*="&i=mcp_activity_control"] {
+    background-image: url("./images/logo.png");
+    background-repeat: no-repeat;
+    background-position: 5px 50%;
+    padding-left: 30px !important;
+    background-size: 18px 18px;
+}
