@@ -168,7 +168,7 @@ class listener implements EventSubscriberInterface
                     const menuHeader = menuLink.closest(".menu-block").querySelector("a.header");
                     if (menuHeader && !menuHeader.querySelector("img.ac-logo")) {
                         const logoImg = document.createElement("img");
-                        logoImg.src = "/ext/linkguarder/activitycontrol/styles/prosilver/theme/images/logo.png";
+                        logoImg.src = "/ext/linkguarder/activitycontrol/styles/prosilver/theme/images/logo.svg";
                         logoImg.className = "ac-logo";
                         logoImg.style.height = "18px";
                         logoImg.style.verticalAlign = "middle";
@@ -211,7 +211,6 @@ class listener implements EventSubscriberInterface
     {
 		$this->template->assign_vars([
 			'U_DEMO_PAGE'	=> $this->helper->route('linkguarder_activitycontrol_controller', array('name' => 'world')),
-            'AC_FOOTER_LOGO' => '<img src="/ext/linkguarder/activitycontrol/styles/prosilver/theme/images/logo.png" alt="Community Protected" style="height: 25px;" />',
 		]);
     }
     
