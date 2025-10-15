@@ -60,6 +60,7 @@ class listener implements EventSubscriberInterface
             'core.submit_post_end'              => 'update_user_group_status',
             'core.acp_page_header'              => 'load_acp_stylesheet',
             'core.mcp_page_header'              => 'load_mcp_stylesheet',
+            'core.page_header_after'            => 'inject_menu_logo_js',
         ];
     }
 
@@ -126,32 +127,60 @@ class listener implements EventSubscriberInterface
             return;
         }
 
-        $min_posts = (int) $this->config['min_posts_for_links'];
         $user_posts = (int) $this->user->data['user_posts'];
+        $sql_ary = $event->get_sql_ary();
 
-        if ($user_posts < $min_posts) {
-            $sql_ary = $event->get_sql_ary();
-            
-            // Signature
-            if ($this->config['ac_remove_sig_links'] && isset($sql_ary['user_sig'])) {
-                $cleaned_sig = $this->remove_links($sql_ary['user_sig'], 'signature');
-                if ($sql_ary['user_sig'] !== $cleaned_sig) {
-                    $sql_ary['user_sig'] = $cleaned_sig;
-                    $this->log_action('signature_links_removed');
-                }
+        // Signature
+        $min_posts_sig = (int) $this->config['ac_remove_sig_links_posts'];
+        if ($min_posts_sig > 0 && $user_posts < $min_posts_sig && isset($sql_ary['user_sig'])) {
+            $cleaned_sig = $this->remove_links($sql_ary['user_sig'], 'signature');
+            if ($sql_ary['user_sig'] !== $cleaned_sig) {
+                $sql_ary['user_sig'] = $cleaned_sig;
+                $this->log_action('signature_links_removed');
             }
-
-            // Site web
-            if ($this->config['ac_remove_profile_links'] && isset($sql_ary['user_website'])) {
-                $cleaned_website = $this->remove_links($sql_ary['user_website'], 'website');
-                if ($sql_ary['user_website'] !== $cleaned_website) {
-                    $sql_ary['user_website'] = $cleaned_website;
-                    $this->log_action('website_link_removed');
-                }
-            }
-
-            $event->set_sql_ary($sql_ary);
         }
+
+        // Site web
+        $min_posts_profile = (int) $this->config['ac_remove_profile_links_posts'];
+        if ($min_posts_profile > 0 && $user_posts < $min_posts_profile && isset($sql_ary['user_website'])) {
+            $cleaned_website = $this->remove_links($sql_ary['user_website'], 'website');
+            if ($sql_ary['user_website'] !== $cleaned_website) {
+                $sql_ary['user_website'] = ''; // Vider le champ site web
+                $this->log_action('website_link_removed');
+            }
+        }
+
+        $event->set_sql_ary($sql_ary);
+    }
+
+    public function inject_menu_logo_js($event)
+    {
+        // Ne s'exécute que dans l'ACP ou le MCP
+        if (!$this->user->page['is_acp'] && !$this->user->page['is_mcp']) {
+            return;
+        }
+        
+        // Ce script trouvera le menu de notre extension et y ajoutera le logo
+        $script = '
+            document.addEventListener("DOMContentLoaded", function() {
+                const menuLink = document.querySelector(\'a[href*="-linkguarder-activitycontrol-"]\');
+                if (menuLink) {
+                    const menuHeader = menuLink.closest(".menu-block").querySelector("a.header");
+                    if (menuHeader && !menuHeader.querySelector("img.ac-logo")) {
+                        const logoImg = document.createElement("img");
+                        logoImg.src = "/ext/linkguarder/activitycontrol/styles/prosilver/theme/images/logo.png";
+                        logoImg.className = "ac-logo";
+                        logoImg.style.height = "18px";
+                        logoImg.style.verticalAlign = "middle";
+                        logoImg.style.marginRight = "6px";
+                        menuHeader.prepend(logoImg);
+                    }
+                }
+            });
+        ';
+        
+        // Injecte le script dans le pied de page
+        $this->template->assign_var('S_FOOTER_JS', $script);
     }
 
     /**

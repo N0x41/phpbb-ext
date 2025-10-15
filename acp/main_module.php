@@ -46,10 +46,10 @@ class main_module
 		        		trigger_error('FORM_INVALID');
 		        	}
                     $config->set('min_posts_for_links', $request->variable('min_posts_for_links', 0));
-                    // Ajouter la sauvegarde des nouvelles options
                     $config->set('ac_quarantine_posts', $request->variable('ac_quarantine_posts', 0));
-                    $config->set('ac_remove_sig_links', $request->variable('ac_remove_sig_links', 0));
-                    $config->set('ac_remove_profile_links', $request->variable('ac_remove_profile_links', 0));
+                    // Mettre à jour les noms de variables et s'attendre à des entiers
+                    $config->set('ac_remove_sig_links_posts', $request->variable('ac_remove_sig_links_posts', 0));
+                    $config->set('ac_remove_profile_links_posts', $request->variable('ac_remove_profile_links_posts', 0));
 
                     trigger_error($user->lang('ACP_ACTIVITY_CONTROL_SETTING_SAVED') . adm_back_link($this->u_action));
                 }
@@ -60,8 +60,8 @@ class main_module
                     'MIN_POSTS_FOR_LINKS'       => $config['min_posts_for_links'],
                     // Assigner les nouvelles variables au template
                     'AC_QUARANTINE_POSTS'       => $config['ac_quarantine_posts'],
-                    'AC_REMOVE_SIG_LINKS'       => $config['ac_remove_sig_links'],
-                    'AC_REMOVE_PROFILE_LINKS'   => $config['ac_remove_profile_links'],
+                    'AC_REMOVE_SIG_LINKS_POSTS'   => $config['ac_remove_sig_links_posts'],
+                    'AC_REMOVE_PROFILE_LINKS_POSTS' => $config['ac_remove_profile_links_posts'],
                 ]);
                 break;
 
