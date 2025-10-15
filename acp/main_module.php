@@ -11,6 +11,18 @@ namespace linkguarder\activitycontrol\acp;
 class main_module
 {
     public $u_action;
+    
+    /** @var \phpbb\user */
+    protected $user;
+    
+    /** @var \phpbb\template\template */
+    protected $template;
+    
+    /** @var \phpbb\request\request */
+    protected $request;
+    
+    /** @var \phpbb\config\config */
+    protected $config;
 
     public function main($id, $mode)
     {
