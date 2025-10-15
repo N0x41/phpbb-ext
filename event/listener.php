@@ -329,16 +329,22 @@ class listener implements EventSubscriberInterface
 
                 if (!$group_id) {
                     // Créer le groupe avec les champs obligatoires
-                    $group_data['group_legend'] = $group_data['group_name'];
+                    $group_data['group_legend'] = 0; // Champ entier pour la légende
                     $group_data['group_rank'] = 0;
                     $group_data['group_display'] = 1;
                     $group_data['group_receive_pm'] = 1;
                     $group_data['group_message_limit'] = 0;
                     $group_data['group_max_recipients'] = 5;
                     $group_data['group_avatar'] = '';
-                    $group_data['group_avatar_type'] = 0;
+                    $group_data['group_avatar_type'] = '';
                     $group_data['group_avatar_width'] = 0;
                     $group_data['group_avatar_height'] = 0;
+                    $group_data['group_desc_bitfield'] = '';
+                    $group_data['group_desc_options'] = 7;
+                    $group_data['group_desc_uid'] = '';
+                    $group_data['group_sig_chars'] = 0;
+                    $group_data['group_founder_manage'] = 0;
+                    $group_data['group_skip_auth'] = 0;
                     
                     $sql = 'INSERT INTO ' . GROUPS_TABLE . ' ' . $this->db->sql_build_array('INSERT', $group_data);
                     $this->db->sql_query($sql);
