@@ -21,7 +21,7 @@ class main
 	/* @var \phpbb\user */
 	protected $user;
 
-    public function __construct(\phpbb\template\template $template)
+	public function __construct(\phpbb\config\config $config, \phpbb\controller\helper $helper, \phpbb\template\template $template, \phpbb\user $user)
     {
 		$this->config = $config;
 		$this->helper = $helper;
@@ -31,9 +31,7 @@ class main
 
     public function handle()
     {
-        
-		$this->template->assign_var('DEMO_MESSAGE', $this->user->lang('MIN_POSTS_FOR_LINKS', $this.config['min_posts_for_links']));
-        
-        return $this->helper->render('body.html');
+		$this->template->assign_var('DEMO_MESSAGE', $this->user->lang('MIN_POSTS_FOR_LINKS', (int) $this->config['min_posts_for_links']));
+		return $this->helper->render('body.html');
     }
 }

@@ -29,7 +29,7 @@ class main_module
         global $config, $request, $template, $user;
 
         // Informations générales sur la page
-        $this->add_lang('acp/common');
+        $user->add_lang_ext('linkguarder/activitycontrol', 'common');
         $this->tpl_name = 'acp_activitycontrol_body';
         $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_SETTINGS'];
         add_form_key('linkguarder/activitycontrol');
@@ -44,9 +44,9 @@ class main_module
             // Sauvegarde des nouvelles valeurs
             //foreach ($cfg_array as $config_name => $config_value)
             //{
-            //    $this->config->set($config_name, $config_value);
+            //    $config->set($config_name, $config_value);
             //}
-            $this->config->set('min_posts_for_links', $request->variable('min_posts_for_links', 0));
+            $config->set('min_posts_for_links', $request->variable('min_posts_for_links', 0));
 
             //trigger_error($user->lang['CONFIG_UPDATED'] . adm_back_link($this->u_action));
             trigger_error($user->lang('ACP_ACTIVITY_CONTROL_SETTING_SAVED') . adm_back_link($this->u_action));
