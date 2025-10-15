@@ -13,10 +13,13 @@ class main_info
     public function module()
     {
         return [
-            'filename'  => '\linkguarder\activitycontrol\acp\acp_activitycontrol_module',
+            'filename'  => '\linkguarder\activitycontrol\acp\main_module',
             'title'     => 'ACP_ACTIVITY_CONTROL',
             'modes'     => [
-                'settings' => ['title' => 'ACP_ACTIVITY_CONTROL_SETTINGS', 'cat' => ['ACP_CAT_DOT_MODS']],
+                'settings' => [
+                    'title' => 'ACP_ACTIVITY_CONTROL_SETTINGS',
+                    'cat' => ['ACP_CAT_DOT_MODS']
+                ],
             ],
         ];
     }
