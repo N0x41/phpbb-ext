@@ -29,5 +29,23 @@ $lang = array_merge($lang, [
     'CONFIG_UPDATED'                        => 'Configuration updated successfully.',
 
     // Le nouveau message d'erreur
-    'ERROR_MIN_POSTS_FOR_LINKS'             => 'You need at least %d posts to be able to post links.',
+    'ERROR_MIN_POSTS_FOR_LINKS' => 'You need at least %d posts to be able to post links.',
+
+    // Nouvelles clés de langue pour l'ACP
+    'AC_MODERATION_SETTINGS'        => 'Moderation Settings',
+    'AC_QUARANTINE_POSTS'           => 'Quarantine posts',
+    'AC_QUARANTINE_POSTS_EXPLAIN'   => 'If enabled, posts with removed links will be sent to the moderation queue instead of being posted directly.',
+    'AC_REMOVE_SIG_LINKS'           => 'Remove links from signatures',
+    'AC_REMOVE_SIG_LINKS_EXPLAIN'   => 'If enabled, links will be removed from the signatures of users who do not meet the minimum post requirement.',
+    'AC_REMOVE_PROFILE_LINKS'       => 'Remove links from profiles',
+    'AC_REMOVE_PROFILE_LINKS_EXPLAIN' => 'If enabled, links will be removed from profile fields (like website) for users who do not meet the minimum post requirement.',
+
+    'AC_LINK_REMOVED'               => 'link removed',
+    'ACP_ACTIVITY_CONTROL_LOGS'     => 'Logs',
+    'MCP_ACTIVITY_CONTROL'          => 'Activity Control',
+    'MCP_ACTIVITY_CONTROL_LOGS'     => 'Action Logs',
+    'AC_LOG_USER'                   => 'User',
+    'AC_LOG_TIME'                   => 'Time',
+    'AC_LOG_ACTION'                 => 'Action',
+    'AC_LOG_DATA'                   => 'Details',
 ]);

@@ -1,20 +1,30 @@
 <!-- INCLUDE overall_header.html -->
 
-<form id="acp_activity_control" method="post" action="{U_ACTION}">
+<fieldset>
+	<legend>{L_SETTINGS}</legend>
+	<dl>
+		<dt><label for="min_posts_for_links">{L_MIN_POSTS_FOR_LINKS}</label><br><span>{L_MIN_POSTS_FOR_LINKS_EXPLAIN}</span></dt>
+		<dd><input name="min_posts_for_links" type="number" id="min_posts_for_links" value="{MIN_POSTS_FOR_LINKS}" /></dd>
+	</dl>
+</fieldset>
 
-	<fieldset>
-		<legend>{L_SETTINGS}</legend>
-		<dl>
-			<dt><label for="min_posts_for_links">{L_MIN_POSTS_FOR_LINKS}</label><br><span>{L_MIN_POSTS_FOR_LINKS_EXPLAIN}</span></dt>
-			<dd><input name="min_posts_for_links" type="number" id="min_posts_for_links" value="{MIN_POSTS_FOR_LINKS}" /></dd>
-		</dl>
-	</fieldset>
-
-	<fieldset class="submit-buttons">
-		<input class="button1" type="submit" id="submit" name="submit" value="{L_SUBMIT}" />&nbsp;
-		<input class="button2" type="reset" id="reset" name="reset" value="{L_RESET}" />
-		{S_FORM_TOKEN}
-	</fieldset>
-</form>
+<fieldset>
+	<legend>{L_AC_MODERATION_SETTINGS}</legend>
+	<dl>
+		<dt><label for="ac_quarantine_posts">{L_AC_QUARANTINE_POSTS}</label><br><span>{L_AC_QUARANTINE_POSTS_EXPLAIN}</span></dt>
+		<dd><label><input type="radio" class="radio" name="ac_quarantine_posts" value="1"checked="checked"/> {L_YES}</label>
+			<label><input type="radio" class="radio" name="ac_quarantine_posts" value="0"checked="checked"/> {L_NO}</label></dd>
+	</dl>
+	<dl>
+		<dt><label for="ac_remove_sig_links">{L_AC_REMOVE_SIG_LINKS}</label><br><span>{L_AC_REMOVE_SIG_LINKS_EXPLAIN}</span></dt>
+		<dd><label><input type="radio" class="radio" name="ac_remove_sig_links" value="1"checked="checked"/> {L_YES}</label>
+			<label><input type="radio" class="radio" name="ac_remove_sig_links" value="0"checked="checked"/> {L_NO}</label></dd>
+	</dl>
+	<dl>
+		<dt><label for="ac_remove_profile_links">{L_AC_REMOVE_PROFILE_LINKS}</label><br><span>{L_AC_REMOVE_PROFILE_LINKS_EXPLAIN}</span></dt>
+		<dd><label><input type="radio" class="radio" name="ac_remove_profile_links" value="1"checked="checked"/> {L_YES}</label>
+			<label><input type="radio" class="radio" name="ac_remove_profile_links" value="0"checked="checked"/> {L_NO}</label></dd>
+	</dl>
+</fieldset>
 
 <!-- INCLUDE overall_footer.html -->

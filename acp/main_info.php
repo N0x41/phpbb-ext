@@ -21,7 +21,12 @@ class main_info
 					'auth'	=> 'ext_linkguarder/activitycontrol && acl_a_board',
 					'cat'	=> array('ACP_ACTIVITY_CONTROL')
 				),
-			),
+                'logs'	    => array(
+                    'title'	=> 'ACP_ACTIVITY_CONTROL_LOGS',
+                    'auth'	=> 'ext_linkguarder/activitycontrol && acl_a_board',
+                    'cat'	=> array('ACP_ACTIVITY_CONTROL')
+                ),
+            ),
 		);
     }
 }

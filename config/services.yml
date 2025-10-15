@@ -8,6 +8,8 @@ services:
             - '@user'
             - '@auth'
             - '@language'
+            - '@dbal.conn' # Service pour la base de données
+            - '@group_helper' # Service pour gérer les groupes
         tags:
             - { name: event.listener }
     linkguarder.activitycontrol.controller:
