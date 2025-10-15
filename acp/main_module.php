@@ -25,6 +25,10 @@ class main_module
         // Récupération des données du formulaire
         if ($request->is_set_post('submit'))
         {
+			if (!check_form_key('linkguarder/activitycontrol'))
+			{
+				trigger_error('FORM_INVALID');
+			}
             // Sauvegarde des nouvelles valeurs
             //foreach ($cfg_array as $config_name => $config_value)
             //{

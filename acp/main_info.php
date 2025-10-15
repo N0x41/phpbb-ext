@@ -12,15 +12,16 @@ class main_info
 {
     public function module()
     {
-        return [
-            'filename'  => '\linkguarder\activitycontrol\acp\main_module',
-            'title'     => 'ACP_ACTIVITY_CONTROL',
-            'modes'     => [
-                'settings' => [
-                    'title' => 'ACP_ACTIVITY_CONTROL_SETTINGS',
-                    'cat' => ['ACP_CAT_DOT_MODS']
-                ],
-            ],
-        ];
+		return array(
+			'filename'	=> '\linkguarder\activitycontrol\acp\main_module',
+			'title'		=> 'ACP_ACTIVITY_CONTROL',
+			'modes'		=> array(
+				'settings'	=> array(
+					'title'	=> 'ACP_ACTIVITY_CONTROL_SETTINGS',
+					'auth'	=> 'ext_linkguarder/activitycontrol && acl_a_board',
+					'cat'	=> array('ACP_ACTIVITY_CONTROL')
+				),
+			),
+		);
     }
 }
