@@ -20,7 +20,7 @@ class initial_migration extends \phpbb\db\migration\migration
     static public function depends_on()
     {
         // Dépendances de migration, généralement \phpbb\db\migration\data\v31x\v314
-        return ['\phpbb\db\migration\data\v33x\v330'];
+        return [];
     }
 
     public function update_data()
