@@ -1,0 +1,9 @@
+services:
+    linkguarder.activitycontrol.listener:
+        class: linkguarder\activitycontrol\event\main_listener
+        arguments:
+            - '@config'
+            - '@template'
+            - '@user'
+        tags:
+            - { name: event.listener }
