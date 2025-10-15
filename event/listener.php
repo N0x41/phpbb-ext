@@ -10,7 +10,7 @@ namespace linkguarder\activitycontrol\event;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-class main_listener implements EventSubscriberInterface
+class listener implements EventSubscriberInterface
 {
     /** @var \phpbb\config\config */
     protected $config;
@@ -24,20 +24,40 @@ class main_listener implements EventSubscriberInterface
     /** @var \phpbb\language\language */
     protected $language;
 
+	/** @var \phpbb\controller\helper */
+	protected $helper;
+
+	/** @var \phpbb\template\template */
+	protected $template;
+
     public function __construct(\phpbb\config\config $config, \phpbb\user $user, \phpbb\auth\auth $auth, \phpbb\language\language $language)
     {
         $this->config = $config;
         $this->user = $user;
         $this->auth = $auth;
         $this->language = $language;
+        $this->helper = $helper;
+        $this->template = $template;
     }
 
     static public function getSubscribedEvents()
     {
-        return [
+		return array(
+			'core.user_setup'	=> 'load_language_on_setup',
+			'core.page_header'	=> 'add_page_header_link',
             'core.submit_post_start' => 'check_links_in_post',
-        ];
-    }
+		);
+	}
+
+	public function load_language_on_setup($event)
+	{
+		$lang_set_ext = $event['lang_set_ext'];
+		$lang_set_ext[] = array(
+			'ext_name' => 'linkguarder/activityguard',
+			'lang_set' => 'common',
+		);
+		$event['lang_set_ext'] = $lang_set_ext;
+	}
 
     public function check_links_in_post($event)
     {
@@ -68,4 +88,11 @@ class main_listener implements EventSubscriberInterface
             }
         }
     }
+
+	public function add_page_header_link($event)
+	{
+		$this->template->assign_vars(array(
+			'U_DEMO_PAGE'	=> $this->helper->route('linkguarder_activitycontrol_controller', array('name' => 'world')),
+		));
+	}
 }

@@ -40,7 +40,7 @@ class initial_migration extends \phpbb\db\migration\migration
                 'acp',
                 'ACP_ACTIVITY_CONTROL',
                 [
-                    'module_basename'   => '\linkguarder\activitycontrol\acp\acp_activitycontrol_module',
+                    'module_basename'   => '\linkguarder\activitycontrol\acp\main_module',
                     'modes'             => ['settings'],
                 ],
             ]],
