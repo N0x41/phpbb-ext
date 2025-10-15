@@ -50,4 +50,20 @@ $lang = array_merge($lang, [
     'AC_LOG_ACTION'                 => 'Action',
     'AC_LOG_DATA'                   => 'Details',
     'NO_LOGS_FOUND'                 => 'No logs found.',
+    
+    // Messages pour les groupes
+    'AC_RESTRICTED_GROUP'           => 'AC - Restricted Users',
+    'AC_PARTIALLY_VERIFIED_GROUP'   => 'AC - Partially Verified Users',
+    'AC_VERIFIED_GROUP'             => 'AC - Verified Users',
+    
+    // Messages pour les actions de logs
+    'POST_LINKS_REMOVED'            => 'Post links removed',
+    'POST_QUARANTINED'              => 'Post quarantined',
+    'SIGNATURE_LINKS_REMOVED'       => 'Signature links removed',
+    'WEBSITE_LINK_REMOVED'          => 'Website link removed',
+    'PROFILE_FIELD_LINKS_REMOVED'   => 'Profile field links removed',
+    'MESSAGE_LINKS_REMOVED'         => 'Message links removed',
+    'USER_ADDED_TO_RESTRICTED_GROUP' => 'User added to restricted group',
+    'USER_GROUP_UPDATED'            => 'User group updated',
+    'GROUP_CREATED'                 => 'Group created',
 ]);

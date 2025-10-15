@@ -61,6 +61,7 @@ class listener implements EventSubscriberInterface
             'core.acp_page_header'              => 'load_acp_stylesheet',
             'core.mcp_page_header'              => 'load_mcp_stylesheet',
             'core.page_header_after'            => 'inject_menu_logo_js',
+            'core.message_parser_check_message' => 'process_message_links',
         ];
     }
 
@@ -76,6 +77,7 @@ class listener implements EventSubscriberInterface
 
     public function process_post_content($event)
     {
+        // Ne pas appliquer aux modérateurs et administrateurs
         if ($this->auth->acl_gets('m_', 'a_')) {
             return;
         }
@@ -83,20 +85,32 @@ class listener implements EventSubscriberInterface
         $min_posts = (int) $this->config['min_posts_for_links'];
         $user_posts = (int) $this->user->data['user_posts'];
 
+        // Si l'utilisateur n'a pas atteint le minimum de messages requis
         if ($user_posts < $min_posts) {
             $post_data = $event->get_data();
             $message = $post_data['message'];
             
-            $cleaned_message = $this->remove_links($message, 'post');
-
-            if ($message !== $cleaned_message) {
+            // Vérifier si le message contient des liens
+            if ($this->contains_links($message)) {
+                $cleaned_message = $this->remove_links($message, 'post');
                 $post_data['message'] = $cleaned_message;
-                $this->log_action('post_links_removed', ['subject' => $post_data['subject']]);
+                
+                // Enregistrer l'action
+                $this->log_action('post_links_removed', [
+                    'subject' => $post_data['subject'],
+                    'original_message' => $message,
+                    'cleaned_message' => $cleaned_message
+                ]);
 
+                // Si la quarantaine est activée, mettre le post en attente de modération
                 if ($this->config['ac_quarantine_posts']) {
-                    $post_data['post_approval'] = 1; // Mettre le post en attente de modération
-                    $this->log_action('post_quarantined', ['subject' => $post_data['subject']]);
+                    $post_data['post_approval'] = 1;
+                    $this->log_action('post_quarantined', [
+                        'subject' => $post_data['subject'],
+                        'reason' => 'Links removed and quarantined'
+                    ]);
                 }
+                
                 $event->set_data($post_data);
             }
         }
@@ -123,34 +137,61 @@ class listener implements EventSubscriberInterface
      */
     public function process_profile_and_signature($event)
     {
+        // Ne pas appliquer aux modérateurs et administrateurs
         if ($this->auth->acl_gets('m_', 'a_')) {
             return;
         }
 
         $user_posts = (int) $this->user->data['user_posts'];
         $sql_ary = $event->get_sql_ary();
+        $changes_made = false;
 
-        // Signature
+        // Traitement de la signature
         $min_posts_sig = (int) $this->config['ac_remove_sig_links_posts'];
         if ($min_posts_sig > 0 && $user_posts < $min_posts_sig && isset($sql_ary['user_sig'])) {
-            $cleaned_sig = $this->remove_links($sql_ary['user_sig'], 'signature');
-            if ($sql_ary['user_sig'] !== $cleaned_sig) {
-                $sql_ary['user_sig'] = $cleaned_sig;
-                $this->log_action('signature_links_removed');
+            if ($this->contains_links($sql_ary['user_sig'])) {
+                $original_sig = $sql_ary['user_sig'];
+                $sql_ary['user_sig'] = $this->remove_links($sql_ary['user_sig'], 'signature');
+                $this->log_action('signature_links_removed', [
+                    'original_signature' => $original_sig,
+                    'cleaned_signature' => $sql_ary['user_sig']
+                ]);
+                $changes_made = true;
             }
         }
 
-        // Site web
+        // Traitement du site web
         $min_posts_profile = (int) $this->config['ac_remove_profile_links_posts'];
         if ($min_posts_profile > 0 && $user_posts < $min_posts_profile && isset($sql_ary['user_website'])) {
-            $cleaned_website = $this->remove_links($sql_ary['user_website'], 'website');
-            if ($sql_ary['user_website'] !== $cleaned_website) {
-                $sql_ary['user_website'] = ''; // Vider le champ site web
-                $this->log_action('website_link_removed');
+            if ($this->contains_links($sql_ary['user_website'])) {
+                $original_website = $sql_ary['user_website'];
+                $sql_ary['user_website'] = ''; // Vider complètement le champ site web
+                $this->log_action('website_link_removed', [
+                    'original_website' => $original_website,
+                    'reason' => 'User below minimum post count for profile links'
+                ]);
+                $changes_made = true;
             }
         }
 
-        $event->set_sql_ary($sql_ary);
+        // Traitement d'autres champs de profil qui pourraient contenir des liens
+        $profile_fields = ['user_occ', 'user_from', 'user_interests'];
+        foreach ($profile_fields as $field) {
+            if (isset($sql_ary[$field]) && $this->contains_links($sql_ary[$field])) {
+                $original_value = $sql_ary[$field];
+                $sql_ary[$field] = $this->remove_links($sql_ary[$field], 'profile_field');
+                $this->log_action('profile_field_links_removed', [
+                    'field' => $field,
+                    'original_value' => $original_value,
+                    'cleaned_value' => $sql_ary[$field]
+                ]);
+                $changes_made = true;
+            }
+        }
+
+        if ($changes_made) {
+            $event->set_sql_ary($sql_ary);
+        }
     }
 
     public function inject_menu_logo_js($event)
@@ -197,7 +238,9 @@ class listener implements EventSubscriberInterface
     public function set_initial_group($event)
     {
         $user_id = $event->get_user_id();
+        $this->ensure_groups_exist();
         $this->group_helper->add_user_to_group_by_name($user_id, 'AC - Utilisateurs restreints');
+        $this->log_action('user_added_to_restricted_group', ['user_id' => $user_id]);
     }
 
     /**
@@ -207,11 +250,117 @@ class listener implements EventSubscriberInterface
     {
         $user_id = $event->get_data()['poster_id'];
         $user_posts = (int) $this->user->data['user_posts'] + 1; // +1 car le post vient d'être validé
-        $min_posts = (int) $this->config['min_posts_for_links'];
+        
+        $this->ensure_groups_exist();
+        $this->update_user_group_based_on_posts($user_id, $user_posts);
+    }
 
-        if ($user_posts >= $min_posts) {
-            $this->group_helper->remove_user_from_group_by_name($user_id, 'AC - Utilisateurs restreints');
-            $this->group_helper->add_user_to_group_by_name($user_id, 'AC - Utilisateurs vérifiés');
+    /**
+     * Met à jour le groupe d'un utilisateur en fonction de son nombre de posts
+     */
+    private function update_user_group_based_on_posts($user_id, $user_posts)
+    {
+        $min_posts = (int) $this->config['min_posts_for_links'];
+        $min_sig_posts = (int) $this->config['ac_remove_sig_links_posts'];
+        $min_profile_posts = (int) $this->config['ac_remove_profile_links_posts'];
+        
+        // Déterminer le groupe approprié
+        if ($user_posts >= $min_posts && $user_posts >= $min_sig_posts && $user_posts >= $min_profile_posts) {
+            // Utilisateur complètement vérifié
+            $new_group = 'AC - Utilisateurs vérifiés';
+        } elseif ($user_posts >= $min_posts) {
+            // Utilisateur peut poster des liens mais pas dans signature/profil
+            $new_group = 'AC - Utilisateurs partiellement vérifiés';
+        } else {
+            // Utilisateur restreint
+            $new_group = 'AC - Utilisateurs restreints';
+        }
+        
+        // Supprimer de tous les groupes AC
+        $ac_groups = ['AC - Utilisateurs restreints', 'AC - Utilisateurs partiellement vérifiés', 'AC - Utilisateurs vérifiés'];
+        foreach ($ac_groups as $group_name) {
+            $this->group_helper->remove_user_from_group_by_name($user_id, $group_name);
+        }
+        
+        // Ajouter au nouveau groupe
+        $this->group_helper->add_user_to_group_by_name($user_id, $new_group);
+        
+        $this->log_action('user_group_updated', [
+            'user_id' => $user_id,
+            'new_group' => $new_group,
+            'user_posts' => $user_posts,
+            'min_posts' => $min_posts
+        ]);
+    }
+
+    /**
+     * S'assure que tous les groupes nécessaires existent
+     */
+    private function ensure_groups_exist()
+    {
+        $groups_to_create = [
+            'AC - Utilisateurs restreints' => [
+                'group_name' => 'AC - Utilisateurs restreints',
+                'group_desc' => 'Utilisateurs avec restrictions sur les liens',
+                'group_type' => GROUP_SPECIAL,
+                'group_colour' => '#FF0000'
+            ],
+            'AC - Utilisateurs partiellement vérifiés' => [
+                'group_name' => 'AC - Utilisateurs partiellement vérifiés',
+                'group_desc' => 'Utilisateurs pouvant poster des liens mais avec restrictions sur signature/profil',
+                'group_type' => GROUP_SPECIAL,
+                'group_colour' => '#FFA500'
+            ],
+            'AC - Utilisateurs vérifiés' => [
+                'group_name' => 'AC - Utilisateurs vérifiés',
+                'group_desc' => 'Utilisateurs avec tous les privilèges de liens',
+                'group_type' => GROUP_SPECIAL,
+                'group_colour' => '#00FF00'
+            ]
+        ];
+
+        foreach ($groups_to_create as $group_name => $group_data) {
+            // Vérifier si le groupe existe
+            $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
+            $result = $this->db->sql_query($sql);
+            $group_id = $this->db->sql_fetchfield('group_id');
+            $this->db->sql_freeresult($result);
+
+            if (!$group_id) {
+                // Créer le groupe
+                $sql = 'INSERT INTO ' . GROUPS_TABLE . ' ' . $this->db->sql_build_array('INSERT', $group_data);
+                $this->db->sql_query($sql);
+                $this->log_action('group_created', ['group_name' => $group_name]);
+            }
+        }
+    }
+
+    /**
+     * Traite les liens dans les messages (commentaires, réponses, etc.)
+     */
+    public function process_message_links($event)
+    {
+        // Ne pas appliquer aux modérateurs et administrateurs
+        if ($this->auth->acl_gets('m_', 'a_')) {
+            return;
+        }
+
+        $min_posts = (int) $this->config['min_posts_for_links'];
+        $user_posts = (int) $this->user->data['user_posts'];
+
+        if ($user_posts < $min_posts) {
+            $message = $event['message'];
+            
+            if ($this->contains_links($message)) {
+                $cleaned_message = $this->remove_links($message, 'message');
+                $event['message'] = $cleaned_message;
+                
+                $this->log_action('message_links_removed', [
+                    'original_message' => $message,
+                    'cleaned_message' => $cleaned_message,
+                    'context' => 'message_parser'
+                ]);
+            }
         }
     }
 
@@ -223,14 +372,57 @@ class listener implements EventSubscriberInterface
     }
     
     /**
+     * Vérifie si un texte contient des liens
+     */
+    private function contains_links($text)
+    {
+        $link_patterns = [
+            '/(https?:\/\/[^\s<>"\'\[\]]+)/i',
+            '/(www\.[^\s<>"\'\[\]]+\.[a-z]{2,})/i',
+            '/\[url[=]?([^\]]*)\]([^\[]+)\[\/url\]/i',
+            '/\[url=([^\]]+)\]([^\[]+)\[\/url\]/i',
+            '/([a-z0-9-]+\.([a-z]{2,}\.)*[a-z]{2,})/i'
+        ];
+        
+        foreach ($link_patterns as $pattern) {
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
      * Fonction générique pour supprimer les liens d'un texte
      */
     private function remove_links($text, $type = 'generic')
     {
-        if (preg_match('/https?:\/\/|www\./i', $text)) {
-            return preg_replace('/(https?:\/\/[^\s<]+|www\.[^\s<]+)/i', '[' . $this->language->lang('AC_LINK_REMOVED') . ']', $text);
+        // Patterns pour détecter différents types de liens
+        $link_patterns = [
+            // URLs complètes avec http/https
+            '/(https?:\/\/[^\s<>"\'\[\]]+)/i',
+            // URLs avec www.
+            '/(www\.[^\s<>"\'\[\]]+\.[a-z]{2,})/i',
+            // Liens BBCode [url]
+            '/\[url[=]?([^\]]*)\]([^\[]+)\[\/url\]/i',
+            // Liens BBCode [url=...]...[/url]
+            '/\[url=([^\]]+)\]([^\[]+)\[\/url\]/i',
+            // Domaines simples (ex: google.com)
+            '/([a-z0-9-]+\.([a-z]{2,}\.)*[a-z]{2,})/i'
+        ];
+        
+        $link_replaced = false;
+        $cleaned_text = $text;
+        
+        foreach ($link_patterns as $pattern) {
+            if (preg_match($pattern, $cleaned_text)) {
+                $cleaned_text = preg_replace($pattern, '[' . $this->language->lang('AC_LINK_REMOVED') . ']', $cleaned_text);
+                $link_replaced = true;
+            }
         }
-        return $text;
+        
+        return $cleaned_text;
     }
 
     /**
