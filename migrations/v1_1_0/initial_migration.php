@@ -20,7 +20,7 @@ class initial_migration extends \phpbb\db\migration\migration
     static public function depends_on()
     {
         // La dépendance doit pointer vers une migration de la version 3.3.x
-        return ['\phpbb\db\migration\data\v33x\v330'];
+        return ['\phpbb\db\migration\data\v33x\v331'];
     }
 
     public function update_data()
