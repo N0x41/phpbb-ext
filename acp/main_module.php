@@ -17,7 +17,7 @@ class main_module
         global $config, $request, $template, $user;
 
         // Informations générales sur la page
-        //$this->tpl_name = 'acp_activitycontrol_body';
+        $this->tpl_name = 'acp_activitycontrol_body';
         $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_SETTINGS'];
         add_form_key('linkguarder/activitycontrol');
 
