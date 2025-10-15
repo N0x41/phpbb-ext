@@ -1,5 +1,7 @@
 <!-- INCLUDE overall_header.html -->
 
+<form id="acp_activity_control" method="post" action="{U_ACTION}">
+
 <fieldset>
 	<legend>{L_SETTINGS}</legend>
 	<dl>
@@ -12,8 +14,8 @@
 	<legend>{L_AC_MODERATION_SETTINGS}</legend>
 	<dl>
 		<dt><label for="ac_quarantine_posts">{L_AC_QUARANTINE_POSTS}</label><br><span>{L_AC_QUARANTINE_POSTS_EXPLAIN}</span></dt>
-		<dd><label><input type="radio" class="radio" name="ac_quarantine_posts" value="1"checked="checked"/> {L_YES}</label>
-			<label><input type="radio" class="radio" name="ac_quarantine_posts" value="0"checked="checked"/> {L_NO}</label></dd>
+		<dd><label><input type="radio" class="radio" name="ac_quarantine_posts" value="1"<!-- IF AC_QUARANTINE_POSTS -->checked="checked"<!-- ENDIF -->/> {L_YES}</label>
+			<label><input type="radio" class="radio" name="ac_quarantine_posts" value="0"<!-- IF not AC_QUARANTINE_POSTS -->checked="checked"<!-- ENDIF -->/> {L_NO}</label></dd>
 	</dl>
 	<dl>
 		<dt><label for="ac_remove_sig_links_posts">{L_AC_REMOVE_SIG_LINKS}</label><br><span>{L_AC_REMOVE_SIG_LINKS_EXPLAIN}</span></dt>
@@ -24,5 +26,13 @@
 		<dd><input name="ac_remove_profile_links_posts" type="number" id="ac_remove_profile_links_posts" value="{AC_REMOVE_PROFILE_LINKS_POSTS}" /></dd>
 	</dl>
 </fieldset>
+
+<fieldset class="submit-buttons">
+	<input class="button1" type="submit" id="submit" name="submit" value="{L_SUBMIT}" />&nbsp;
+	<input class="button2" type="reset" id="reset" name="reset" value="{L_RESET}" />
+	{S_FORM_TOKEN}
+</fieldset>
+
+</form>
 
 <!-- INCLUDE overall_footer.html -->

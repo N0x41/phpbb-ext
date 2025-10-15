@@ -30,6 +30,13 @@ class initial_migration extends \phpbb\db\migration\migration
             ['config.add', ['activity_control_version', '1.1.0']],
             
             ['config.add', ['min_posts_for_links', 10]],
+            ['config.add', ['ac_quarantine_posts', 0]],
+            ['config.add', ['ac_remove_sig_links_posts', 5]],
+            ['config.add', ['ac_remove_profile_links_posts', 5]],
+            
+            // Créer la table des logs
+            ['custom', [[$this, 'create_logs_table']]],
+            
             // Ajoute le module ACP
             ['module.add', [
                 'acp',
@@ -45,5 +52,30 @@ class initial_migration extends \phpbb\db\migration\migration
                 ],
             ]],
         ];
+    }
+    
+    /**
+     * Crée la table des logs pour Activity Control
+     */
+    public function create_logs_table()
+    {
+        $table_name = $this->table_prefix . 'ac_logs';
+        
+        $schema = [
+            'COLUMNS' => [
+                'log_id'        => ['UINT', null, 'auto_increment'],
+                'user_id'       => ['UINT', 0],
+                'log_time'      => ['TIMESTAMP', 0],
+                'log_action'    => ['VCHAR', ''],
+                'log_data'      => ['TEXT', ''],
+            ],
+            'PRIMARY_KEY' => 'log_id',
+            'KEYS' => [
+                'user_id' => ['INDEX', 'user_id'],
+                'log_time' => ['INDEX', 'log_time'],
+            ],
+        ];
+        
+        $this->db_tools->sql_create_table($table_name, $schema);
     }
 }

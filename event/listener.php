@@ -163,17 +163,25 @@ class listener implements EventSubscriberInterface
         // Ce script trouvera le menu de notre extension et y ajoutera le logo
         $script = '
             document.addEventListener("DOMContentLoaded", function() {
-                const menuLink = document.querySelector(\'a[href*="-linkguarder-activitycontrol-"]\');
-                if (menuLink) {
-                    const menuHeader = menuLink.closest(".menu-block").querySelector("a.header");
-                    if (menuHeader && !menuHeader.querySelector("img.ac-logo")) {
-                        const logoImg = document.createElement("img");
-                        logoImg.src = "/ext/linkguarder/activitycontrol/styles/prosilver/theme/images/logo.svg";
-                        logoImg.className = "ac-logo";
-                        logoImg.style.height = "18px";
-                        logoImg.style.verticalAlign = "middle";
-                        logoImg.style.marginRight = "6px";
-                        menuHeader.prepend(logoImg);
+                // Chercher le lien du menu Activity Control
+                const menuLinks = document.querySelectorAll(\'a[href*="activitycontrol"]\');
+                for (let menuLink of menuLinks) {
+                    if (menuLink.textContent.includes("Activity Control")) {
+                        const menuBlock = menuLink.closest(".menu-block");
+                        if (menuBlock) {
+                            const menuHeader = menuBlock.querySelector("a.header");
+                            if (menuHeader && !menuHeader.querySelector("img.ac-logo")) {
+                                const logoImg = document.createElement("img");
+                                logoImg.src = "' . $this->helper->route('linkguarder_activitycontrol_controller', array('name' => 'logo')) . '/../styles/prosilver/theme/images/logo.svg";
+                                logoImg.className = "ac-logo";
+                                logoImg.style.height = "18px";
+                                logoImg.style.verticalAlign = "middle";
+                                logoImg.style.marginRight = "6px";
+                                logoImg.style.marginLeft = "5px";
+                                menuHeader.insertBefore(logoImg, menuHeader.firstChild);
+                            }
+                        }
+                        break;
                     }
                 }
             });

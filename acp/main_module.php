@@ -66,10 +66,11 @@ class main_module
                 break;
 
             case 'logs':
-                $this->page_title = $logo_html . $user->lang['ACP_ACTIVITY_CONTROL_LOGS'];
+                $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_LOGS'];
                 $this->tpl_name = 'acp_activitycontrol_logs';
                 
-                $sql = 'SELECT l.*, u.username, u.user_colour FROM ' . $db->sql_escape($table_prefix) . 'ac_logs l
+                global $table_prefix;
+                $sql = 'SELECT l.*, u.username, u.user_colour FROM ' . $table_prefix . 'ac_logs l
                         LEFT JOIN ' . USERS_TABLE . ' u ON (l.user_id = u.user_id)
                         ORDER BY l.log_time DESC';
                 $result = $db->sql_query_limit($sql, 50); // Limite aux 50 derniers logs pour la performance

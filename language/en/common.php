@@ -42,10 +42,12 @@ $lang = array_merge($lang, [
 
     'AC_LINK_REMOVED'               => 'link removed',
     'ACP_ACTIVITY_CONTROL_LOGS'     => 'Logs',
+    'ACP_ACTIVITY_CONTROL_LOGS_EXPLAIN' => 'View the latest activity control logs.',
     'MCP_ACTIVITY_CONTROL'          => 'Activity Control',
     'MCP_ACTIVITY_CONTROL_LOGS'     => 'Action Logs',
     'AC_LOG_USER'                   => 'User',
     'AC_LOG_TIME'                   => 'Time',
     'AC_LOG_ACTION'                 => 'Action',
     'AC_LOG_DATA'                   => 'Details',
+    'NO_LOGS_FOUND'                 => 'No logs found.',
 ]);

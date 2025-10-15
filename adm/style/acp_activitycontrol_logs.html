@@ -1,30 +1,31 @@
 <!-- INCLUDE overall_header.html -->
 
-<a id="maincontent"></a>
-
 <h1>{L_ACP_ACTIVITY_CONTROL_LOGS}</h1>
 
-<p>{L_ACP_ACTIVITY_CONTROL_LOGS_EXPLAIN}</p>
+<p class="success">{L_ACP_ACTIVITY_CONTROL_LOGS_EXPLAIN}</p>
 
-<table class="table1 zebra-list">
+<table class="table1">
 <thead>
 <tr>
-	<th>{L_AC_LOG_USER}</th>
-	<th>{L_AC_LOG_ACTION}</th>
-	<th>{L_AC_LOG_TIME}</th>
-	<th>{L_AC_LOG_DATA}</th>
+	<th>{L_USER}</th>
+	<th>{L_ACTION}</th>
+	<th>{L_TIME}</th>
+	<th>{L_DATA}</th>
 </tr>
 </thead>
 <tbody>
+<!-- BEGIN logs -->
 <tr>
-		<td>{logs.USERNAME_FULL}</td>
-		<td>{logs.ACTION}</td>
-		<td>{logs.TIME}</td>
-		<td>{logs.DATA}</td>
-	</tr>
+	<td>{logs.USERNAME_FULL}</td>
+	<td>{logs.ACTION}</td>
+	<td>{logs.TIME}</td>
+	<td>{logs.DATA}</td>
+</tr>
+<!-- BEGINELSE -->
 <tr>
-		<td colspan="4" style="text-align: center;">{L_NO_ITEMS}</td>
-	</tr>
+	<td colspan="4" style="text-align: center;">{L_NO_LOGS_FOUND}</td>
+</tr>
+<!-- END logs -->
 </tbody>
 </table>
 
