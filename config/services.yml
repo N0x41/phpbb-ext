@@ -3,7 +3,12 @@ services:
         class: linkguarder\activitycontrol\event\main_listener
         arguments:
             - '@config'
-            - '@template'
             - '@user'
+            - '@auth'
+            - '@language'
         tags:
             - { name: event.listener }
+    linkguarder.activitycontrol.controller:
+        class: linkguarder\activitycontrol\controller\main_controller
+        arguments:
+            - '@template'

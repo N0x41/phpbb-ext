@@ -1,0 +1,3 @@
+activity_control_route:
+    path: /activitycontrol
+    defaults: { _controller: linkguarder.activitycontrol.controller:handle }
