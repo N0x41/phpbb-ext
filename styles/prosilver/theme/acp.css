@@ -1,5 +1,5 @@
 #menu a[href*="&i=acp_activity_control"] {
-    background-image: url("./images/logo.png");
+    background-image: url("./images/logo.svg");
     background-repeat: no-repeat;
     background-position: 5px 50%; /* Positionne l'icône à gauche */
     padding-left: 30px !important; /* Crée de l'espace pour l'icône */
