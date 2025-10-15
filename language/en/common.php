@@ -66,4 +66,5 @@ $lang = array_merge($lang, [
     'USER_ADDED_TO_RESTRICTED_GROUP' => 'User added to restricted group',
     'USER_GROUP_UPDATED'            => 'User group updated',
     'GROUP_CREATED'                 => 'Group created',
+    'GROUP_CREATION_FAILED'         => 'Group creation failed',
 ]);

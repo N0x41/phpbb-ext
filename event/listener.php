@@ -303,34 +303,53 @@ class listener implements EventSubscriberInterface
                 'group_name' => 'AC - Utilisateurs restreints',
                 'group_desc' => 'Utilisateurs avec restrictions sur les liens',
                 'group_type' => GROUP_SPECIAL,
-                'group_colour' => '#FF0000'
+                'group_colour' => 'red'
             ],
             'AC - Utilisateurs partiellement vérifiés' => [
                 'group_name' => 'AC - Utilisateurs partiellement vérifiés',
                 'group_desc' => 'Utilisateurs pouvant poster des liens mais avec restrictions sur signature/profil',
                 'group_type' => GROUP_SPECIAL,
-                'group_colour' => '#FFA500'
+                'group_colour' => 'orange'
             ],
             'AC - Utilisateurs vérifiés' => [
                 'group_name' => 'AC - Utilisateurs vérifiés',
                 'group_desc' => 'Utilisateurs avec tous les privilèges de liens',
                 'group_type' => GROUP_SPECIAL,
-                'group_colour' => '#00FF00'
+                'group_colour' => 'green'
             ]
         ];
 
         foreach ($groups_to_create as $group_name => $group_data) {
-            // Vérifier si le groupe existe
-            $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
-            $result = $this->db->sql_query($sql);
-            $group_id = $this->db->sql_fetchfield('group_id');
-            $this->db->sql_freeresult($result);
+            try {
+                // Vérifier si le groupe existe
+                $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
+                $result = $this->db->sql_query($sql);
+                $group_id = $this->db->sql_fetchfield('group_id');
+                $this->db->sql_freeresult($result);
 
-            if (!$group_id) {
-                // Créer le groupe
-                $sql = 'INSERT INTO ' . GROUPS_TABLE . ' ' . $this->db->sql_build_array('INSERT', $group_data);
-                $this->db->sql_query($sql);
-                $this->log_action('group_created', ['group_name' => $group_name]);
+                if (!$group_id) {
+                    // Créer le groupe avec les champs obligatoires
+                    $group_data['group_legend'] = $group_data['group_name'];
+                    $group_data['group_rank'] = 0;
+                    $group_data['group_display'] = 1;
+                    $group_data['group_receive_pm'] = 1;
+                    $group_data['group_message_limit'] = 0;
+                    $group_data['group_max_recipients'] = 5;
+                    $group_data['group_avatar'] = '';
+                    $group_data['group_avatar_type'] = 0;
+                    $group_data['group_avatar_width'] = 0;
+                    $group_data['group_avatar_height'] = 0;
+                    
+                    $sql = 'INSERT INTO ' . GROUPS_TABLE . ' ' . $this->db->sql_build_array('INSERT', $group_data);
+                    $this->db->sql_query($sql);
+                    $this->log_action('group_created', ['group_name' => $group_name]);
+                }
+            } catch (\Exception $e) {
+                // En cas d'erreur, continuer avec les autres groupes
+                $this->log_action('group_creation_failed', [
+                    'group_name' => $group_name,
+                    'error' => $e->getMessage()
+                ]);
             }
         }
     }
