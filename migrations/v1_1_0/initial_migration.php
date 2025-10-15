@@ -29,6 +29,7 @@ class initial_migration extends \phpbb\db\migration\migration
             // Ajoute une nouvelle configuration à la base de données
             ['config.add', ['activity_control_version', '1.1.0']],
             
+            ['config.add', ['min_posts_for_links', 10]],
             // Ajoute le module ACP
             ['module.add', [
                 'acp',
