@@ -30,14 +30,14 @@ class listener implements EventSubscriberInterface
 	/** @var \phpbb\template\template */
 	protected $template;
 
-    public function __construct(\phpbb\config\config $config, \phpbb\user $user, \phpbb\auth\auth $auth, \phpbb\language\language $language)
+    public function __construct(\phpbb\controller\helper $helper, \phpbb\template\template $template, \phpbb\config\config $config, \phpbb\user $user, \phpbb\auth\auth $auth, \phpbb\language\language $language)
     {
+        $this->helper = $helper;
+        $this->template = $template;
         $this->config = $config;
         $this->user = $user;
         $this->auth = $auth;
         $this->language = $language;
-        $this->helper = $helper;
-        $this->template = $template;
     }
 
     static public function getSubscribedEvents()
