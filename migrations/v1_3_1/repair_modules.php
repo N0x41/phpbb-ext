@@ -30,7 +30,10 @@ class repair_modules extends \phpbb\db\migration\migration
         }
         // Vérifier chaque mode
         // Nettoyage automatique : supprimer tous les modules ACP/MCP de l'extension
-        $db->sql_query("DELETE FROM {$table_prefix}modules WHERE module_langname LIKE 'ACP_ACTIVITY_CONTROL%' AND module_class IN ('acp','mcp')");
+    // Supprimer les modules orphelins (parent_id inexistant)
+    $db->sql_query("DELETE m FROM {$table_prefix}modules m LEFT JOIN {$table_prefix}modules p ON m.parent_id = p.module_id WHERE m.parent_id > 0 AND p.module_id IS NULL");
+    // Supprimer tous les modules ACP/MCP de l'extension
+    $db->sql_query("DELETE FROM {$table_prefix}modules WHERE module_langname LIKE 'ACP_ACTIVITY_CONTROL%' AND module_class IN ('acp','mcp')");
         foreach (['settings', 'logs', 'ip_bans'] as $mode) {
             $langname = 'ACP_ACTIVITY_CONTROL_' . strtoupper($mode);
             $sql = "SELECT module_id FROM {$table_prefix}modules WHERE module_langname = '" . $db->sql_escape($langname) . "' AND module_class = 'acp'";
