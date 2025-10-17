@@ -43,11 +43,12 @@ class ip_ban_sync_migration extends \phpbb\db\migration\migration
     public function create_remote_ip_bans_table()
     {
         $table_name = $this->table_prefix . 'ac_remote_ip_bans';
+        // Correction : le champ 'cidr' doit être typé (TINYINT) pour éviter l'erreur SQL
         $schema = [
             'COLUMNS' => [
                 'id'            => ['UINT', null, 'auto_increment'],
                 'ip'            => ['VCHAR:45', ''],
-                'cidr'          => ['TINYINT', 32],
+                'cidr'          => ['TINYINT:3', 32],
                 'reason'        => ['VCHAR:255', ''],
                 'source'        => ['VCHAR:32', 'local'],
                 'action'        => ['VCHAR:8', 'add'],
