@@ -14,7 +14,7 @@ class ip_ban_sync_migration extends \phpbb\db\migration\migration
 
     static public function depends_on()
     {
-        return ['\linkguarder\activitycontrol\migrations\v1_1_0\initial_migration'];
+        return ['\linkguarder\activitycontrol\migrations\v1_2_0\next_step'];
     }
 
     public function update_data()
