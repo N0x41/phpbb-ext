@@ -19,3 +19,15 @@ services:
             - '@controller.helper'
             - '@template'
             - '@user'
+
+    # Squelette du service de synchronisation IP bans (à implémenter)
+    linkguarder.activitycontrol.ip_ban_sync:
+        class: linkguarder\activitycontrol\service\ip_ban_sync
+        arguments:
+            - '@config'
+            - '@dbal.conn'
+            - '@user'
+            - '@auth'
+            - '@request'
+        tags:
+            - { name: cron.task }

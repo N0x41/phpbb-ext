@@ -50,6 +50,22 @@ $lang = array_merge($lang, [
     'AC_LOG_ACTION'                 => 'Action',
     'AC_LOG_DATA'                   => 'Details',
     'NO_LOGS_FOUND'                 => 'No logs found.',
+    // IP bans ACP
+    'ACP_ACTIVITY_CONTROL_IP_BANS' => 'IP bans',
+    'ACP_ACTIVITY_CONTROL_IP_BANS_EXPLAIN' => 'Manage banned IP addresses locally and synchronize with the central server.',
+    'ACP_ACTIVITY_CONTROL_IP_BANS_MANAGE' => 'Manage IP bans',
+    'ACP_ACTIVITY_CONTROL_IP_BANS_ADD' => 'Add a new IP ban',
+    'L_IP' => 'IP address',
+    'L_CIDR' => 'CIDR',
+    'L_REASON' => 'Reason',
+    'L_SOURCE' => 'Source',
+    'L_STATUS' => 'Status',
+    'L_BANNED_AT' => 'Banned at',
+    'L_EXPIRES_AT' => 'Expires at',
+    'L_ACTIONS' => 'Actions',
+    'L_ADD' => 'Add',
+    'L_SYNC_NOW' => 'Synchronize now',
+    'L_NO_IP_BANS_FOUND' => 'No IP bans found.',
     
     // Messages pour les groupes
     'AC_RESTRICTED_GROUP'           => 'AC - Restricted Users',

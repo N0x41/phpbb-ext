@@ -26,6 +26,11 @@ class main_info
                     'auth'  => 'ext_linkguarder/activitycontrol && acl_a_board',
                     'cat'   => ['ACP_CAT_DOT_MODS'] // Placé DANS LE MÊME onglet
                 ],
+                'ip_bans'   => [
+                    'title' => 'ACP_ACTIVITY_CONTROL_IP_BANS', // Le lien "IP bans"
+                    'auth'  => 'ext_linkguarder/activitycontrol && acl_a_board',
+                    'cat'   => ['ACP_CAT_DOT_MODS']
+                ],
             ],
         ];
     }

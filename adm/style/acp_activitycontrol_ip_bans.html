@@ -1,0 +1,62 @@
+<!-- INCLUDE overall_header.html -->
+
+<h1>{L_ACP_ACTIVITY_CONTROL_IP_BANS}</h1>
+<p>{L_ACP_ACTIVITY_CONTROL_IP_BANS_EXPLAIN}</p>
+
+<form id="acp_activitycontrol_ip_bans" method="post" action="{U_ACTION}">
+<fieldset>
+	<legend>{L_ACP_ACTIVITY_CONTROL_IP_BANS_MANAGE}</legend>
+	<table class="table1">
+	<thead>
+	<tr>
+		<th>{L_IP}</th>
+		<th>{L_CIDR}</th>
+		<th>{L_REASON}</th>
+		<th>{L_SOURCE}</th>
+		<th>{L_STATUS}</th>
+		<th>{L_BANNED_AT}</th>
+		<th>{L_EXPIRES_AT}</th>
+		<th>{L_ACTIONS}</th>
+	</tr>
+	</thead>
+	<tbody>
+	<!-- BEGIN ip_bans -->
+	<tr>
+		<td>{ip_bans.IP}</td>
+		<td>{ip_bans.CIDR}</td>
+		<td>{ip_bans.REASON}</td>
+		<td>{ip_bans.SOURCE}</td>
+		<td>{ip_bans.STATUS}</td>
+		<td>{ip_bans.BANNED_AT}</td>
+		<td>{ip_bans.EXPIRES_AT}</td>
+		<td>{ip_bans.ACTIONS}</td>
+	</tr>
+	<!-- BEGINELSE -->
+	<tr><td colspan="8" style="text-align:center;">{L_NO_IP_BANS_FOUND}</td></tr>
+	<!-- END ip_bans -->
+	</tbody>
+	</table>
+</fieldset>
+
+<fieldset>
+	<legend>{L_ACP_ACTIVITY_CONTROL_IP_BANS_ADD}</legend>
+	<dl>
+		<dt><label for="ip">{L_IP}</label></dt>
+		<dd><input name="ip" type="text" id="ip" value="" /></dd>
+		<dt><label for="cidr">{L_CIDR}</label></dt>
+		<dd><input name="cidr" type="number" id="cidr" value="32" min="0" max="128" /></dd>
+		<dt><label for="reason">{L_REASON}</label></dt>
+		<dd><input name="reason" type="text" id="reason" value="" /></dd>
+		<dt><label for="expires_at">{L_EXPIRES_AT}</label></dt>
+		<dd><input name="expires_at" type="datetime-local" id="expires_at" value="" /></dd>
+	</dl>
+	<input class="button1" type="submit" name="add_ip_ban" value="{L_ADD}" />
+</fieldset>
+
+<fieldset class="submit-buttons">
+	<input class="button1" type="submit" name="sync_ip_bans" value="{L_SYNC_NOW}" />
+</fieldset>
+
+</form>
+
+<!-- INCLUDE overall_footer.html -->
