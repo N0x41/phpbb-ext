@@ -13,38 +13,38 @@ class repair_modules extends \phpbb\db\migration\migration
 
     public function update_data()
     {
-        return [
-            // S'assurer que la catégorie ACP existe
-            ['module.add', [
+        $data = [];
+        $db = $this->db;
+        $table_prefix = $this->table_prefix;
+        // Vérifier la catégorie ACP
+        $sql = "SELECT module_id FROM {$table_prefix}modules WHERE module_langname = 'ACP_ACTIVITY_CONTROL' AND module_class = 'acp'";
+        $result = $db->sql_query($sql);
+        $row = $db->sql_fetchrow($result);
+        $db->sql_freeresult($result);
+        if (!$row) {
+            $data[] = ['module.add', [
                 'acp',
                 'ACP_CAT_DOT_MODS',
                 'ACP_ACTIVITY_CONTROL',
-            ]],
-            // S'assurer que les modes existent
-            ['module.add', [
-                'acp',
-                'ACP_ACTIVITY_CONTROL',
-                [
-                    'module_basename'   => '\\linkguarder\\activitycontrol\\acp\\main_module',
-                    'modes'             => ['settings'],
-                ],
-            ]],
-            ['module.add', [
-                'acp',
-                'ACP_ACTIVITY_CONTROL',
-                [
-                    'module_basename'   => '\\linkguarder\\activitycontrol\\acp\\main_module',
-                    'modes'             => ['logs'],
-                ],
-            ]],
-            ['module.add', [
-                'acp',
-                'ACP_ACTIVITY_CONTROL',
-                [
-                    'module_basename'   => '\\linkguarder\\activitycontrol\\acp\\main_module',
-                    'modes'             => ['ip_bans'],
-                ],
-            ]],
-        ];
+            ]];
+        }
+        // Vérifier chaque mode
+        foreach (['settings', 'logs', 'ip_bans'] as $mode) {
+            $sql = "SELECT module_id FROM {$table_prefix}modules WHERE module_langname = 'ACP_ACTIVITY_CONTROL_'" . strtoupper($mode) . "' AND module_class = 'acp'";
+            $result = $db->sql_query($sql);
+            $row = $db->sql_fetchrow($result);
+            $db->sql_freeresult($result);
+            if (!$row) {
+                $data[] = ['module.add', [
+                    'acp',
+                    'ACP_ACTIVITY_CONTROL',
+                    [
+                        'module_basename'   => '\\linkguarder\\activitycontrol\\acp\\main_module',
+                        'modes'             => [$mode],
+                    ],
+                ]];
+            }
+        }
+        return $data;
     }
 }
