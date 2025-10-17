@@ -66,6 +66,7 @@ $lang = array_merge($lang, [
     'L_ADD' => 'Add',
     'L_SYNC_NOW' => 'Synchronize now',
     'L_NO_IP_BANS_FOUND' => 'No IP bans found.',
+    'L_DELETE' => 'Delete',
     
     // Messages pour les groupes
     'AC_RESTRICTED_GROUP'           => 'AC - Restricted Users',

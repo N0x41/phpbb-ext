@@ -29,7 +29,9 @@
 		<td>{ip_bans.STATUS}</td>
 		<td>{ip_bans.BANNED_AT}</td>
 		<td>{ip_bans.EXPIRES_AT}</td>
-		<td>{ip_bans.ACTIONS}</td>
+		<td>
+			<button class="button2" type="submit" name="delete_ip_ban_id" value="{ip_bans.ID}">{L_DELETE}</button>
+		</td>
 	</tr>
 	<!-- BEGINELSE -->
 	<tr><td colspan="8" style="text-align:center;">{L_NO_IP_BANS_FOUND}</td></tr>

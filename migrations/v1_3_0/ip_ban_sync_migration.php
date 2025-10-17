@@ -8,7 +8,8 @@ class ip_ban_sync_migration extends \phpbb\db\migration\migration
 {
     public function effectively_installed()
     {
-        return isset($this->config['ac_ipban_sync_enabled']);
+        // Considérer la migration comme installée uniquement si la table existe
+        return $this->db_tools->sql_table_exists($this->table_prefix . 'ac_remote_ip_bans');
     }
 
     static public function depends_on()
@@ -43,14 +44,17 @@ class ip_ban_sync_migration extends \phpbb\db\migration\migration
     public function create_remote_ip_bans_table()
     {
         $table_name = $this->table_prefix . 'ac_remote_ip_bans';
-        // Correction : le champ 'cidr' doit être typé (TINYINT) pour éviter l'erreur SQL
+        // Si la table existe déjà, ne rien faire
+        if ($this->db_tools->sql_table_exists($table_name)) {
+            return;
+        }
+        // Correction : utiliser un alias supporté et sûr pour MySQL
     $schema = [
             'COLUMNS' => [
                 'id'            => ['UINT', null, 'auto_increment'],
                 'ip'            => ['VCHAR:45', ''],
-        // Utiliser un alias phpBB supporté pour les petits entiers non signés
-        // (USINT -> SMALLINT UNSIGNED) afin d'éviter tout souci de mapping
-        'cidr'          => ['USINT', 32],
+                // USINT = SMALLINT UNSIGNED; valeur suffisante pour un CIDR 0-128
+                'cidr'          => ['USINT', 32],
                 'reason'        => ['VCHAR:255', ''],
                 'source'        => ['VCHAR:32', 'local'],
                 'action'        => ['VCHAR:8', 'add'],

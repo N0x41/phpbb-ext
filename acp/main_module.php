@@ -37,10 +37,48 @@ class main_module
         switch ($mode)
         {
             case 'settings':
-                // ...existing code...
+                $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_SETTINGS'];
+                $this->tpl_name = 'acp_activitycontrol_body';
+
+                if ($request->is_set_post('submit')) {
+                    if (!check_form_key('linkguarder/activitycontrol'))
+                    {
+                        trigger_error('FORM_INVALID');
+                    }
+                    $config->set('min_posts_for_links', $request->variable('min_posts_for_links', 0));
+                    $config->set('ac_quarantine_posts', $request->variable('ac_quarantine_posts', 0));
+                    $config->set('ac_remove_sig_links_posts', $request->variable('ac_remove_sig_links_posts', 0));
+                    $config->set('ac_remove_profile_links_posts', $request->variable('ac_remove_profile_links_posts', 0));
+
+                    trigger_error($user->lang('ACP_ACTIVITY_CONTROL_SETTING_SAVED') . adm_back_link($this->u_action));
+                }
+
+                $template->assign_vars([
+                    'U_ACTION'                     => $this->u_action,
+                    'MIN_POSTS_FOR_LINKS'          => $config['min_posts_for_links'],
+                    'AC_QUARANTINE_POSTS'          => $config['ac_quarantine_posts'],
+                    'AC_REMOVE_SIG_LINKS_POSTS'    => $config['ac_remove_sig_links_posts'],
+                    'AC_REMOVE_PROFILE_LINKS_POSTS'=> $config['ac_remove_profile_links_posts'],
+                ]);
                 break;
             case 'logs':
-                // ...existing code...
+                $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_LOGS'];
+                $this->tpl_name = 'acp_activitycontrol_logs';
+                global $table_prefix;
+                $sql = 'SELECT l.*, u.username, u.user_colour FROM ' . $table_prefix . 'ac_logs l
+                        LEFT JOIN ' . USERS_TABLE . ' u ON (l.user_id = u.user_id)
+                        ORDER BY l.log_time DESC';
+                $result = $db->sql_query_limit($sql, 50);
+
+                while ($row = $db->sql_fetchrow($result)) {
+                    $template->assign_block_vars('logs', [
+                        'USERNAME_FULL'  => get_username_string('full', $row['user_id'], $row['username'], $row['user_colour']),
+                        'ACTION'         => $row['log_action'],
+                        'TIME'           => $user->format_date($row['log_time']),
+                        'DATA'           => $row['log_data'],
+                    ]);
+                }
+                $db->sql_freeresult($result);
                 break;
             case 'ip_bans':
                 /**
@@ -53,6 +91,8 @@ class main_module
                 $this->page_title = $user->lang('ACP_ACTIVITY_CONTROL_IP_BANS');
                 $this->tpl_name = 'acp_activitycontrol_ip_bans';
                 add_form_key('linkguarder/activitycontrol');
+                $template->assign_var('U_ACTION', $this->u_action);
+                global $table_prefix;
 
                 // Ajout d'une IP bannie locale
                 if ($request->is_set_post('add_ip_ban')) {
@@ -77,7 +117,7 @@ class main_module
                             'last_sync_at' => 0,
                             'status' => 'active',
                         ];
-                        $db->sql_query('INSERT INTO ' . $db->sql_escape($config['table_prefix'] . 'ac_remote_ip_bans') . ' ' . $db->sql_build_array('INSERT', $sql_ary));
+                        $db->sql_query('INSERT INTO ' . $table_prefix . 'ac_remote_ip_bans ' . $db->sql_build_array('INSERT', $sql_ary));
                         // Appliquer le ban dans phpbb_banlist
                         $ban_ary = [
                             'ban_ip' => $ip,
@@ -88,6 +128,27 @@ class main_module
                             'ban_give_reason' => $reason,
                         ];
                         $db->sql_query('INSERT INTO ' . BANLIST_TABLE . ' ' . $db->sql_build_array('INSERT', $ban_ary));
+                        trigger_error($user->lang('CONFIG_UPDATED') . adm_back_link($this->u_action));
+                    }
+                }
+
+                // Suppression d'une IP bannie locale
+                if ($request->is_set_post('delete_ip_ban_id')) {
+                    if (!check_form_key('linkguarder/activitycontrol')) {
+                        trigger_error('FORM_INVALID');
+                    }
+                    $ban_id = $request->variable('delete_ip_ban_id', 0);
+                    if ($ban_id) {
+                        // Récupérer l'IP pour supprimer aussi du banlist core
+                        $sql = 'SELECT ip FROM ' . $table_prefix . 'ac_remote_ip_bans WHERE id = ' . (int) $ban_id;
+                        $result = $db->sql_query($sql);
+                        $ip_row = $db->sql_fetchrow($result);
+                        $db->sql_freeresult($result);
+                        // Supprimer de la table d'appoint
+                        $db->sql_query('DELETE FROM ' . $table_prefix . 'ac_remote_ip_bans WHERE id = ' . (int) $ban_id);
+                        if ($ip_row && !empty($ip_row['ip'])) {
+                            $db->sql_query("DELETE FROM " . BANLIST_TABLE . " WHERE ban_ip = '" . $db->sql_escape($ip_row['ip']) . "'");
+                        }
                         trigger_error($user->lang('CONFIG_UPDATED') . adm_back_link($this->u_action));
                     }
                 }
@@ -103,10 +164,11 @@ class main_module
                 }
 
                 // Affichage de la liste des IP bannies (locales et distantes)
-                $sql = 'SELECT * FROM ' . $db->sql_escape($config['table_prefix'] . 'ac_remote_ip_bans') . ' ORDER BY banned_at DESC';
+                $sql = 'SELECT * FROM ' . $table_prefix . 'ac_remote_ip_bans ORDER BY banned_at DESC';
                 $result = $db->sql_query_limit($sql, 100);
                 while ($row = $db->sql_fetchrow($result)) {
                     $template->assign_block_vars('ip_bans', [
+                        'ID' => $row['id'],
                         'IP' => $row['ip'],
                         'CIDR' => $row['cidr'],
                         'REASON' => $row['reason'],
