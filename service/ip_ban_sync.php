@@ -156,14 +156,17 @@ class ip_ban_sync
         $added_count = 0;
         $removed_count = 0;
 
-        // Ajouter les nouvelles IP
+        // Ajouter les nouvelles IP par lots de 100 pour optimiser
         if (!empty($ips_to_add))
         {
-            foreach (array_keys($ips_to_add) as $ip)
+            $ips_to_add_array = array_keys($ips_to_add);
+            $chunks = array_chunk($ips_to_add_array, 100);
+            
+            foreach ($chunks as $chunk)
             {
-                if ($this->add_ip_ban($ip))
+                if ($this->add_ip_bans_batch($chunk))
                 {
-                    $added_count++;
+                    $added_count += count($chunk);
                 }
             }
         }
@@ -171,12 +174,18 @@ class ip_ban_sync
         // Retirer les IP qui ne sont plus dans la liste centrale
         if (!empty($ips_to_remove))
         {
+            $ban_ids_to_remove = [];
             foreach (array_keys($ips_to_remove) as $ip)
             {
-                if (isset($ban_ids[$ip]) && $this->remove_ip_ban($ban_ids[$ip]))
+                if (isset($ban_ids[$ip]))
                 {
-                    $removed_count++;
+                    $ban_ids_to_remove[] = $ban_ids[$ip];
                 }
+            }
+            
+            if (!empty($ban_ids_to_remove) && $this->remove_ip_bans_batch($ban_ids_to_remove))
+            {
+                $removed_count = count($ban_ids_to_remove);
             }
         }
 
@@ -216,6 +225,33 @@ class ip_ban_sync
     }
 
     /**
+     * Ajoute plusieurs IPs en batch (optimisé)
+     * 
+     * @param array $ips Liste des IPs à bannir
+     * @return bool True si succès
+     */
+    protected function add_ip_bans_batch($ips)
+    {
+        if (empty($ips))
+        {
+            return true;
+        }
+
+        $ban_reason = $this->config['ac_ban_reason'] ?: 'Activity Control - Central Ban List';
+        $ban_give_reason = 'Automatically banned by Activity Control';
+
+        // Utiliser la fonction phpBB native pour bannir par lot
+        if (!function_exists('user_ban'))
+        {
+            include($this->phpbb_root_path . 'includes/functions_user.' . $this->php_ext);
+        }
+
+        $result = user_ban('ip', $ips, 0, 0, false, $ban_reason, $ban_give_reason);
+
+        return !empty($result);
+    }
+
+    /**
      * Retire une IP de la liste des bans phpBB
      * 
      * @param int $ban_id ID du ban à retirer
@@ -229,6 +265,29 @@ class ip_ban_sync
         }
 
         $result = user_unban('ip', [$ban_id]);
+
+        return $result;
+    }
+
+    /**
+     * Retire plusieurs IPs en batch (optimisé)
+     * 
+     * @param array $ban_ids Liste des IDs de bans à retirer
+     * @return bool True si succès
+     */
+    protected function remove_ip_bans_batch($ban_ids)
+    {
+        if (empty($ban_ids))
+        {
+            return true;
+        }
+
+        if (!function_exists('user_unban'))
+        {
+            include($this->phpbb_root_path . 'includes/functions_user.' . $this->php_ext);
+        }
+
+        $result = user_unban('ip', $ban_ids);
 
         return $result;
     }

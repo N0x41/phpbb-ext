@@ -47,6 +47,10 @@ class main_module
                         trigger_error('FORM_INVALID');
                     }
                     
+                    // Augmenter le temps d'exécution PHP pour la synchronisation
+                    @set_time_limit(300); // 5 minutes
+                    @ini_set('max_execution_time', '300');
+                    
                     // Appeler le service de synchronisation
                     $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
                     $result = $ip_ban_sync->sync();
