@@ -40,6 +40,24 @@ class main_module
                 $this->page_title = $user->lang['ACP_ACTIVITY_CONTROL_SETTINGS'];
                 $this->tpl_name = 'acp_activitycontrol_body';
 
+                // Synchronisation manuelle immédiate
+                if ($request->is_set_post('sync_now')) {
+                    if (!check_form_key('linkguarder/activitycontrol'))
+                    {
+                        trigger_error('FORM_INVALID');
+                    }
+                    
+                    // Appeler le service de synchronisation
+                    $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
+                    $result = $ip_ban_sync->sync();
+                    
+                    if ($result['success']) {
+                        trigger_error(sprintf($user->lang['AC_SYNC_SUCCESS'], $result['added'], $result['removed'], $result['total']) . adm_back_link($this->u_action));
+                    } else {
+                        trigger_error(sprintf($user->lang['AC_SYNC_FAILED'], $result['message']) . adm_back_link($this->u_action), E_USER_WARNING);
+                    }
+                }
+
                 if ($request->is_set_post('submit')) {
                     if (!check_form_key('linkguarder/activitycontrol'))
                     {

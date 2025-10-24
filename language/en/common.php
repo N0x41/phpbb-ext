@@ -117,6 +117,13 @@ $lang = array_merge($lang, [
     'LOG_AC_IP_SYNC_SUCCESS'        => 'IP sync completed: %d added, %d removed, %d total',
     'LOG_AC_IP_SYNC_FAILED'         => 'IP sync failed: %s',
     
+    // Bouton de synchronisation manuelle
+    'AC_SYNC_NOW_TITLE'             => 'Manual synchronization',
+    'AC_SYNC_NOW'                   => 'Sync Now',
+    'AC_SYNC_NOW_EXPLAIN'           => 'Force an immediate synchronization with the central server, regardless of the configured interval.',
+    'AC_SYNC_SUCCESS'               => 'IP synchronization completed successfully: %d IP(s) added, %d IP(s) removed, %d total IP(s) in the list.',
+    'AC_SYNC_FAILED'                => 'IP synchronization failed: %s',
+    
     // Divers
     'NEVER'                         => 'Never',
 ]);
