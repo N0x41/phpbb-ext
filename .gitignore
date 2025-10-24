@@ -1,0 +1,27 @@
+# Données sensibles - NE JAMAIS COMMIT
+data/private_key.pem
+data/reported_ips.json
+*.pem
+
+# Fichiers PHP temporaires
+*.log
+*.cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer
+vendor/
+composer.lock
+
+# Tests
+phpunit.xml
+tests/tmp/

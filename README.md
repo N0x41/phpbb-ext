@@ -1,174 +1,345 @@
-# LinkGuarder Activity Control (phpBB 3.3.x)
-
-Extension phpBB 3.3.x pour contrôler l’activité des utilisateurs, limiter les liens selon le nombre de messages, journaliser les actions et (conception incluse) gérer une liste d’IP bannies synchronisée avec un serveur central. Toute la configuration se fait depuis l’ACP.
-
-> État actuel du code: fonctionnalités de contrôle de liens et de journaux opérationnelles (v1.1.0). Un squelette v1.2.0 est présent. La synchronisation de bannissements IP avec un serveur central est spécifiée ci‑dessous pour guider le développement v1.3.0.
+# 🛡️ Activity Control - Extension phpBB# LinkGuarder Activity Control (phpBB 3.3.x)
 
 
-## Aperçu
 
-- Nom d’extension: linkguarder/activitycontrol
+**Version:** 1.0.0  Extension phpBB 3.3.x pour contrôler l’activité des utilisateurs, limiter les liens selon le nombre de messages, journaliser les actions et (conception incluse) gérer une liste d’IP bannies synchronisée avec un serveur central. Toute la configuration se fait depuis l’ACP.
+
+**Auteur:** LinkGuarder Team  
+
+**Licence:** GPL-2.0-only  > État actuel du code: fonctionnalités de contrôle de liens et de journaux opérationnelles (v1.1.0). Un squelette v1.2.0 est présent. La synchronisation de bannissements IP avec un serveur central est spécifiée ci‑dessous pour guider le développement v1.3.0.
+
+**Compatibilité:** phpBB 3.3.1+, PHP 7.4+
+
+
+
+Extension phpBB complète pour le contrôle de l'activité des utilisateurs, la gestion des liens spam et le signalement automatique des IPs suspectes vers un serveur central sécurisé.## Aperçu
+
+
+
+---- Nom d’extension: linkguarder/activitycontrol
+
 - Namespace: `linkguarder\\activitycontrol`
-- Version: 1.2.0 (voir `composer.json`)
+
+## ✨ Fonctionnalités principales- Version: 1.2.0 (voir `composer.json`)
+
 - Compatibilité: phpBB >= 3.3.1, PHP >= 7.4
-- Points d’entrée:
-  - Fichier d’extension: `ext.php`
-  - Services: `config/services.yml`
-  - Routes (démo): `config/routing.yml`
-  - Contrôleur: `controller/main.php`
-  - Écouteur d’événements: `event/listener.php`
+
+✅ **Contrôle automatique des liens** dans posts, signatures et profils  - Points d’entrée:
+
+✅ **Gestion dynamique des groupes** selon l'activité utilisateur    - Fichier d’extension: `ext.php`
+
+✅ **Signalement d'IP cryptographiquement sécurisé** (RSA 2048-bit)    - Services: `config/services.yml`
+
+✅ **Stockage local** des IPs avec métadonnées complètes    - Routes (démo): `config/routing.yml`
+
+✅ **Module ACP complet** avec Settings, Logs et IP Bans    - Contrôleur: `controller/main.php`
+
+✅ **Infrastructure de synchronisation** pour serveur central    - Écouteur d’événements: `event/listener.php`
+
   - ACP: `acp/main_info.php`, `acp/main_module.php`, templates ACP dans `adm/style/`
-  - Migrations: `migrations/v1_1_0/initial_migration.php`, `migrations/v1_2_0/next_step.php`
+
+---  - Migrations: `migrations/v1_1_0/initial_migration.php`, `migrations/v1_2_0/next_step.php`
+
   - Langues: `language/en/common.php`
 
+## 📥 Installation rapide
 
-## Fonctionnalités existantes
 
-- Filtrage de liens selon le nombre de messages
-  - Supprime/neutralise les liens dans les messages des utilisateurs n’ayant pas atteint un seuil minimal (`min_posts_for_links`).
+
+```bash## Fonctionnalités existantes
+
+# 1. Placez l'extension
+
+cd /path/to/phpbb/ext/linkguarder/- Filtrage de liens selon le nombre de messages
+
+git clone https://github.com/linkguarder/activitycontrol.git activitycontrol  - Supprime/neutralise les liens dans les messages des utilisateurs n’ayant pas atteint un seuil minimal (`min_posts_for_links`).
+
   - Peut mettre en quarantaine (modération) les messages concernés (`ac_quarantine_posts`).
-  - Nettoie les liens dans la signature et les champs de profil selon des seuils distincts (`ac_remove_sig_links_posts`, `ac_remove_profile_links_posts`).
-- Groupes dynamiques
+
+# 2. Activez dans l'ACP  - Nettoie les liens dans la signature et les champs de profil selon des seuils distincts (`ac_remove_sig_links_posts`, `ac_remove_profile_links_posts`).
+
+# Personnaliser → Gérer les extensions → Activity Control → Activer- Groupes dynamiques
+
   - Ajoute les nouveaux utilisateurs au groupe « AC - Utilisateurs restreints ». Transition automatique vers des groupes moins restreints en fonction de l’activité.
-- Journaux d’action
-  - Table `phpbb_ac_logs` (créée par migration) pour tracer les actions de l’extension.
-  - Page ACP « Logs » listant les derniers événements.
+
+# 3. Configurez (optionnel)- Journaux d’action
+
+# ACP → Extensions → Activity Control → Settings  - Table `phpbb_ac_logs` (créée par migration) pour tracer les actions de l’extension.
+
+```  - Page ACP « Logs » listant les derniers événements.
+
 - Intégration UI ACP/MCP
-  - Pages ACP: Paramètres + Logs (voir `adm/style/acp_*.html`).
+
+Pour le signalement d'IP, consultez [IP_REPORTING_INTEGRATION.md](IP_REPORTING_INTEGRATION.md)  - Pages ACP: Paramètres + Logs (voir `adm/style/acp_*.html`).
+
   - Injections CSS/JS minimales et logo dans les menus ACP/MCP.
 
+---
 
-## Prérequis
 
-- phpBB 3.3.x (≥ 3.3.1 recommandé)
-- PHP 7.4+
-- Accès administrateur à l’ACP
 
+## 📚 Documentation## Prérequis
+
+
+
+- **[INSTALLATION.md](docs/INSTALLATION.md)** - Guide d'installation détaillé- phpBB 3.3.x (≥ 3.3.1 recommandé)
+
+- **[CONFIGURATION.md](docs/CONFIGURATION.md)** - Configuration complète- PHP 7.4+
+
+- **[IP_REPORTING_INTEGRATION.md](IP_REPORTING_INTEGRATION.md)** - Signalement d'IP- Accès administrateur à l’ACP
+
+- **[INTEGRATION_SUMMARY.md](INTEGRATION_SUMMARY.md)** - Résumé technique
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Historique des versions
 
 ## Installation
 
+---
+
 1) Placer l’extension dans le dossier phpBB suivant:
+
+## ⚙️ Configuration minimale
 
 - `ext/linkguarder/activitycontrol`
 
-2) Activer l’extension depuis:
+### Prérequis
 
-- ACP > Personnaliser > Gérer les extensions > « Activity Control » > Activer
+- phpBB 3.3.1+2) Activer l’extension depuis:
 
-3) Les migrations s’exécutent automatiquement:
+- PHP 7.4+
 
-- Ajout des clés de configuration
-- Création de la table de logs `phpbb_ac_logs`
-- Ajout des modules ACP
+- Extension OpenSSL (pour signalement d'IP)- ACP > Personnaliser > Gérer les extensions > « Activity Control » > Activer
 
-4) Vider le cache phpBB si besoin (ACP > Général > Purger le cache).
 
+
+### Paramètres par défaut3) Les migrations s’exécutent automatiquement:
+
+
+
+| Paramètre | Valeur par défaut |- Ajout des clés de configuration
+
+|-----------|-------------------|- Création de la table de logs `phpbb_ac_logs`
+
+| Posts min pour liens | 10 |- Ajout des modules ACP
+
+| Posts min signature | 5 |
+
+| Posts min profil | 5 |4) Vider le cache phpBB si besoin (ACP > Général > Purger le cache).
+
+| Quarantaine | Désactivé |
+
+| Signalement d'IP | Désactivé |
 
 ## Configuration (ACP)
 
+---
+
 - Paramètres (ACP > Extensions > Activity Control > Settings):
-  - Minimum posts to post links (`min_posts_for_links`)
+
+## 🔐 Sécurité  - Minimum posts to post links (`min_posts_for_links`)
+
   - Quarantine posts (`ac_quarantine_posts`) [Oui/Non]
-  - Minimum posts for links in signature (`ac_remove_sig_links_posts`)
-  - Minimum posts for links in profile (`ac_remove_profile_links_posts`)
-- Journaux (ACP > Extensions > Activity Control > Logs):
-  - Visualisation des 50 derniers événements.
+
+⚠️ **Données sensibles protégées**  - Minimum posts for links in signature (`ac_remove_sig_links_posts`)
+
+- Clé privée RSA dans `data/private_key.pem` (permissions `600`)  - Minimum posts for links in profile (`ac_remove_profile_links_posts`)
+
+- Répertoire `data/` protégé par `.htaccess`- Journaux (ACP > Extensions > Activity Control > Logs):
+
+- **Ne JAMAIS commit les fichiers `.pem` dans git**  - Visualisation des 50 derniers événements.
 
 
-## Architecture technique (résumé)
 
-- Services (`config/services.yml`)
+⚠️ **RGPD/Conformité**
+
+- Les IPs sont des données personnelles## Architecture technique (résumé)
+
+- Documentez votre base légale
+
+- Informez les utilisateurs- Services (`config/services.yml`)
+
   - `linkguarder.activitycontrol.listener`: écoute des événements core (filtrage liens, groupes, UI ACP/MCP, logs).
-  - `linkguarder.activitycontrol.controller`: page démo et liaison template.
+
+---  - `linkguarder.activitycontrol.controller`: page démo et liaison template.
+
 - Routes (`config/routing.yml`)
-  - `linkguarder_activitycontrol_controller`: `/activitycontrol/{name}` vers `controller\\main::handle`.
+
+## 🏗️ Architecture technique  - `linkguarder_activitycontrol_controller`: `/activitycontrol/{name}` vers `controller\\main::handle`.
+
 - Événements écoutés (extraits):
-  - `core.submit_post_start`, `core.message_parser_check_message`: nettoyer liens avant envoi.
-  - `core.member_register_after`, `core.submit_post_end`: placement/mise à jour des groupes utilisateurs.
-  - `core.acp_page_header`, `core.mcp_page_header`: inclusions CSS.
+
+### Tables de base de données  - `core.submit_post_start`, `core.message_parser_check_message`: nettoyer liens avant envoi.
+
+- `phpbb_ac_logs` : Logs de toutes les actions  - `core.member_register_after`, `core.submit_post_end`: placement/mise à jour des groupes utilisateurs.
+
+- `phpbb_ac_remote_ip_bans` : Gestion des IP bannies  - `core.acp_page_header`, `core.mcp_page_header`: inclusions CSS.
+
 - Base de données
-  - `phpbb_ac_logs`: journaux d’actions (user_id, log_time, log_action, log_data JSON).
-  - Utilisation des tables natives pour groupes (`phpbb_groups`, `phpbb_user_group`).
 
-Fichiers clés:
+### Services principaux  - `phpbb_ac_logs`: journaux d’actions (user_id, log_time, log_action, log_data JSON).
 
-- `event/listener.php`: logique principale de filtrage/nettoyage/assignation de groupes/journalisation.
-- `acp/main_*`: déclaration et rendu des pages ACP (Settings, Logs).
-- `migrations/v1_1_0/initial_migration.php`: config initiale, création des logs, modules ACP.
-- `language/en/common.php`: chaînes utilisées (ACP, logs, messages).
+- `linkguarder.activitycontrol.listener` : Event listener principal  - Utilisation des tables natives pour groupes (`phpbb_groups`, `phpbb_user_group`).
 
+- `linkguarder.activitycontrol.ip_reporter` : Signalement d'IP
+
+- `linkguarder.activitycontrol.ip_ban_sync` : Synchronisation (squelette)Fichiers clés:
+
+
+
+### Événements écoutés- `event/listener.php`: logique principale de filtrage/nettoyage/assignation de groupes/journalisation.
+
+- `core.submit_post_start` - Filtrage liens posts- `acp/main_*`: déclaration et rendu des pages ACP (Settings, Logs).
+
+- `core.ucp_profile_info_modify_sql_ary` - Filtrage signature/profil- `migrations/v1_1_0/initial_migration.php`: config initiale, création des logs, modules ACP.
+
+- `core.member_register_after` - Attribution groupe initial- `language/en/common.php`: chaînes utilisées (ACP, logs, messages).
+
+- `core.submit_post_end` - Mise à jour groupe
+
+- Plus de 10 événements au total
 
 ## Conception: Gestion des IP bannies et synchronisation serveur central (v1.3.0)
 
+---
+
 Objectif: Permettre aux admins de gérer localement une liste d’adresses IP bannies (avec motifs, expirations), et de synchroniser automatiquement avec une liste provenant d’un serveur central. Le serveur central peut publier les IP bannies et les raisons; l’extension peut également lui signaler des bannissements locaux (optionnel).
+
+## 🆘 Support
 
 ### Périmètre fonctionnel
 
+### Problèmes courants
+
 - ACP > Activity Control > IP bans
-  - Lister les IP bannies (locales et « gérées à distance »).
-  - Ajouter/éditer/supprimer une IP bannie localement (IP/CIDR, raison, date d’expiration optionnelle).
-  - Forcer une synchronisation manuelle et afficher l’état de la dernière synchronisation (succès/erreur, timestamp).
-  - Filtrer par source (locale/serveur central) et statut (actif/expiré).
+
+**L'extension ne s'active pas**  - Lister les IP bannies (locales et « gérées à distance »).
+
+```bash  - Ajouter/éditer/supprimer une IP bannie localement (IP/CIDR, raison, date d’expiration optionnelle).
+
+# Vérifier PHP  - Forcer une synchronisation manuelle et afficher l’état de la dernière synchronisation (succès/erreur, timestamp).
+
+php -v  # Doit être >= 7.4  - Filtrer par source (locale/serveur central) et statut (actif/expiré).
+
 - Application bans
-  - S’appuyer sur la table native `phpbb_banlist` pour faire respecter les bannissements au niveau de phpBB (cohérence avec le core: login, visite, etc.).
-  - Maintenir une table d’appoint pour la synchronisation distante.
+
+# Vérifier OpenSSL  - S’appuyer sur la table native `phpbb_banlist` pour faire respecter les bannissements au niveau de phpBB (cohérence avec le core: login, visite, etc.).
+
+php -m | grep openssl  - Maintenir une table d’appoint pour la synchronisation distante.
+
+```
 
 ### Stockage et schéma proposé
 
-- Table native: `phpbb_banlist` (existante; utilisée pour appliquer les bans IP).
-- Nouvelle table (extension): `phpbb_ac_remote_ip_bans` (gérée par migration v1.3.0):
-  - `id` (PK, auto)
+**Les liens ne sont pas filtrés**
+
+- Les modérateurs/admins sont exemptés- Table native: `phpbb_banlist` (existante; utilisée pour appliquer les bans IP).
+
+- Vérifiez la configuration dans l'ACP- Nouvelle table (extension): `phpbb_ac_remote_ip_bans` (gérée par migration v1.3.0):
+
+- Purgez le cache phpBB  - `id` (PK, auto)
+
   - `ip` (VARBINARY pour IPv4/IPv6, ou VCHAR si on stocke en texte normalisé)
-  - `cidr` (TINYINT, 0–128)
-  - `reason` (VCHAR/TEXT)
-  - `source` (VCHAR: ex. « central », « local »)
-  - `action` (ENUM: add/remove) — pour refléter l’intention distante
-  - `hash` (VCHAR) — identifiant immuable ou checksum fourni par le serveur
+
+**Erreur "Private key not found"**  - `cidr` (TINYINT, 0–128)
+
+```bash  - `reason` (VCHAR/TEXT)
+
+# Générer les clés (voir IP_REPORTING_INTEGRATION.md)  - `source` (VCHAR: ex. « central », « local »)
+
+chmod 600 data/private_key.pem  - `action` (ENUM: add/remove) — pour refléter l’intention distante
+
+```  - `hash` (VCHAR) — identifiant immuable ou checksum fourni par le serveur
+
   - `banned_at` (INT/TIMESTAMP)
-  - `expires_at` (INT/TIMESTAMP, nullable)
-  - `last_sync_at` (INT)
-  - `status` (VCHAR: active, removed, expired, conflict)
+
+### Obtenir de l'aide  - `expires_at` (INT/TIMESTAMP, nullable)
+
+- 🐛 [Issues GitHub](https://github.com/linkguarder/activitycontrol/issues)  - `last_sync_at` (INT)
+
+- 📖 [Wiki](https://github.com/linkguarder/activitycontrol/wiki)  - `status` (VCHAR: active, removed, expired, conflict)
+
+- 📧 support@linkguarder.team
 
 Notes:
-- On stocke l’entrée « distante » telle que fournie pour audit/traçabilité; l’application dans `phpbb_banlist` reste la source d’exécution.
+
+---- On stocke l’entrée « distante » telle que fournie pour audit/traçabilité; l’application dans `phpbb_banlist` reste la source d’exécution.
+
 - Pour IPv6/CIDR: normaliser en texte (ex: `2001:db8::/64`) et convertir/résoudre lors de l’application.
+
+## 👨‍💻 Développement
 
 ### Configs ACP (nouvelles clés)
 
-- `ac_ipban_sync_enabled` (bool)
-- `ac_ipban_server_url` (string, ex: `https://central.example.com/api/ip-bans`)
-- `ac_ipban_server_token` (string secret ou clé d’API)
+```bash
+
+# Clone et lien symbolique- `ac_ipban_sync_enabled` (bool)
+
+git clone https://github.com/linkguarder/activitycontrol.git- `ac_ipban_server_url` (string, ex: `https://central.example.com/api/ip-bans`)
+
+ln -s /path/to/activitycontrol /path/to/phpbb/ext/linkguarder/activitycontrol- `ac_ipban_server_token` (string secret ou clé d’API)
+
 - `ac_ipban_sync_interval` (int, minutes)
-- `ac_ipban_last_sync` (timestamp)
-- `ac_ipban_post_local` (bool) — reporter les bans locaux vers le serveur central (optionnel)
 
-Ces clés seront ajoutées via la migration v1.3.0 et exposées dans une nouvelle page ACP « IP bans ».
+# Tests- `ac_ipban_last_sync` (timestamp)
 
-### Tâche cron de synchronisation
+phpunit tests/- `ac_ipban_post_local` (bool) — reporter les bans locaux vers le serveur central (optionnel)
 
-- Implémenter une tâche `cron.task` dédiée (service tag `cron.task`) qui:
+
+
+# ConventionsCes clés seront ajoutées via la migration v1.3.0 et exposées dans une nouvelle page ACP « IP bans ».
+
+# - PSR-12 pour le formatage
+
+# - snake_case pour les configs### Tâche cron de synchronisation
+
+# - Docblocks obligatoires
+
+```- Implémenter une tâche `cron.task` dédiée (service tag `cron.task`) qui:
+
   - S’exécute selon `ac_ipban_sync_interval` et un backoff en cas d’erreur.
-  - Appelle l’API du serveur central et récupère les changements depuis `ac_ipban_last_sync`.
+
+**Contribuer:** Forkez → Branche → PR  - Appelle l’API du serveur central et récupère les changements depuis `ac_ipban_last_sync`.
+
   - Met à jour `phpbb_ac_remote_ip_bans`, puis applique les entrées dans `phpbb_banlist`:
-    - action=add: créer/mettre à jour ban (IP/CIDR), raison « Remote: <source> — <reason> ».
+
+---    - action=add: créer/mettre à jour ban (IP/CIDR), raison « Remote: <source> — <reason> ».
+
     - action=remove: lever le ban correspondant si géré par « central ».
-  - Journalise les actions dans `phpbb_ac_logs` (ex: `ip_ban_sync_started`, `ip_ban_applied`, `ip_ban_removed`, `ip_ban_sync_failed`).
 
-### Contrat d’API (serveur central) — proposition
+## 📄 Licence  - Journalise les actions dans `phpbb_ac_logs` (ex: `ip_ban_sync_started`, `ip_ban_applied`, `ip_ban_removed`, `ip_ban_sync_failed`).
 
-- Authentification: via en‑tête HTTP `Authorization: Bearer <token>` ou HMAC.
+
+
+GPL-2.0-only © 2025 LinkGuarder Team### Contrat d’API (serveur central) — proposition
+
+
+
+---- Authentification: via en‑tête HTTP `Authorization: Bearer <token>` ou HMAC.
+
 - Endpoints
-  1) Pull (obligatoire):
+
+## 🙏 Crédits  1) Pull (obligatoire):
+
      - `GET /api/ip-bans?since=<unix_ts>&limit=1000`
-     - Réponse `200 application/json`:
-       {
-         "cursor": 1697380000,
+
+- phpBB Team     - Réponse `200 application/json`:
+
+- Communauté phpBB       {
+
+- Tous les contributeurs         "cursor": 1697380000,
+
          "items": [
-           {
+
+---           {
+
              "ip": "203.0.113.45",
-             "cidr": 32,
+
+**🔐 Protégez votre communauté avec Activity Control**             "cidr": 32,
+
              "reason": "Abus de spam",
-             "action": "add",
+
+*Développé avec ❤️ par LinkGuarder Team*             "action": "add",
+
              "banned_by": "central",
              "banned_at": 1697375000,
              "expires_at": null,

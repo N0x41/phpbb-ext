@@ -84,4 +84,22 @@ $lang = array_merge($lang, [
     'USER_GROUP_UPDATED'            => 'User group updated',
     'GROUP_CREATED'                 => 'Group created',
     'GROUP_CREATION_FAILED'         => 'Group creation failed',
+    
+    // Signalement d'IP au serveur central
+    'AC_ENABLE_IP_REPORTING'        => 'Enable IP reporting',
+    'AC_ENABLE_IP_REPORTING_EXPLAIN' => 'When enabled, suspicious IPs will be automatically reported to the central server with RSA signature.',
+    'AC_CENTRAL_SERVER_URL'         => 'Central server URL',
+    'AC_CENTRAL_SERVER_URL_EXPLAIN' => 'URL of the central IP reporting server (e.g., http://localhost:5000)',
+    
+    // Logs IP reporting
+    'LOG_AC_IP_SUBMITTED'           => 'IP %s submitted to central server (%s)',
+    'LOG_AC_SUBMISSION_FAILED'      => 'Failed to submit IP %s (HTTP %s): %s',
+    'LOG_AC_SERVER_UNREACHABLE'     => 'Central server unreachable: %s',
+    'LOG_AC_PRIVATE_KEY_MISSING'    => 'Private key not found: %s',
+    'LOG_AC_PRIVATE_KEY_INVALID'    => 'Invalid private key: %s',
+    'LOG_AC_SIGNATURE_FAILED'       => 'Failed to sign IP for submission',
+    
+    // Erreurs ext.php
+    'AC_PHP_VERSION_ERROR'          => 'This extension requires PHP 7.4 or higher.',
+    'AC_OPENSSL_ERROR'              => 'The PHP OpenSSL extension is required for IP reporting.',
 ]);
