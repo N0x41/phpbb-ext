@@ -15,10 +15,7 @@ class ip_ban_sync
     protected $phpbb_root_path;
     protected $php_ext;
 
-    /** @var string Prefix des tables phpBB */
-    protected $table_prefix;
-
-    public function __construct($config, $db, $user, $log, $phpbb_root_path, $php_ext, $table_prefix)
+    public function __construct($config, $db, $user, $log, $phpbb_root_path, $php_ext)
     {
         $this->config = $config;
         $this->db = $db;
@@ -26,7 +23,6 @@ class ip_ban_sync
         $this->log = $log;
         $this->phpbb_root_path = $phpbb_root_path;
         $this->php_ext = $php_ext;
-        $this->table_prefix = $table_prefix;
     }
 
     /**
@@ -139,7 +135,7 @@ class ip_ban_sync
         $remote_ips_set = array_flip($remote_ips); // Pour recherche rapide
 
         // Récupérer les IP actuellement en base
-        $sql = 'SELECT ban_ip, ban_id FROM ' . $this->table_prefix . 'banlist WHERE ban_ip != ""';
+        $sql = 'SELECT ban_ip, ban_id FROM ' . BANLIST_TABLE . ' WHERE ban_ip != ""';
         $result = $this->db->sql_query($sql);
         
         $local_ips = [];

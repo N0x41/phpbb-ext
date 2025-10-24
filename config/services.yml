@@ -32,7 +32,6 @@ services:
             - '@log'
             - '%core.root_path%'
             - '%core.php_ext%'
-            - '%tables.prefix%'
 
     # Service de signalement d'IPs au serveur central
     linkguarder.activitycontrol.ip_reporter:
