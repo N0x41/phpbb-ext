@@ -102,4 +102,21 @@ $lang = array_merge($lang, [
     // Erreurs ext.php
     'AC_PHP_VERSION_ERROR'          => 'This extension requires PHP 7.4 or higher.',
     'AC_OPENSSL_ERROR'              => 'The PHP OpenSSL extension is required for IP reporting.',
+    
+    // Synchronisation IP
+    'AC_ENABLE_IP_SYNC'             => 'Enable IP synchronization',
+    'AC_ENABLE_IP_SYNC_EXPLAIN'     => 'When enabled, the forum will automatically synchronize banned IPs from the central server.',
+    'AC_IP_SYNC_INTERVAL'           => 'Synchronization interval (seconds)',
+    'AC_IP_SYNC_INTERVAL_EXPLAIN'   => 'How often to check for updates from the central server (default: 3600 = 1 hour)',
+    'AC_BAN_REASON'                 => 'Default ban reason',
+    'AC_BAN_REASON_EXPLAIN'         => 'Reason displayed for automatically banned IPs',
+    'AC_LAST_IP_SYNC'               => 'Last synchronization',
+    'AC_IP_LIST_VERSION'            => 'IP list version',
+    
+    // Logs synchronisation
+    'LOG_AC_IP_SYNC_SUCCESS'        => 'IP sync completed: %d added, %d removed, %d total',
+    'LOG_AC_IP_SYNC_FAILED'         => 'IP sync failed: %s',
+    
+    // Divers
+    'NEVER'                         => 'Never',
 ]);

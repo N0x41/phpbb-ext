@@ -110,12 +110,11 @@ class install_v1_0_0 extends \phpbb\db\migration\migration
             ['config.add', ['ac_remove_profile_links_posts', 5]],
             
             // === Synchronisation des IP bannies ===
-            ['config.add', ['ac_ipban_sync_enabled', 0]],
-            ['config.add', ['ac_ipban_server_url', '']],
-            ['config.add', ['ac_ipban_server_token', '']],
-            ['config.add', ['ac_ipban_sync_interval', 60]],
-            ['config.add', ['ac_ipban_last_sync', 0]],
-            ['config.add', ['ac_ipban_post_local', 0]],
+            ['config.add', ['ac_enable_ip_sync', 0]],
+            ['config.add', ['ac_ip_sync_interval', 3600]], // 1 heure par défaut
+            ['config.add', ['ac_last_ip_sync', 0]], // Timestamp de la dernière sync
+            ['config.add', ['ac_ip_list_version', 0]], // Version de la liste
+            ['config.add', ['ac_ban_reason', 'Activity Control - Central Ban List']], // Raison du ban
             
             // === Signalement d'IP au serveur central ===
             ['config.add', ['ac_enable_ip_reporting', 0]],

@@ -1,7 +1,6 @@
 <?php
 /**
  * Service de synchronisation des IP bannies avec le serveur central
- * Squelette pour extension future — voir README pour l'API et la logique attendue
  *
  * @package linkguarder/activitycontrol
  */
@@ -12,35 +11,253 @@ class ip_ban_sync
     protected $config;
     protected $db;
     protected $user;
-    protected $auth;
-    protected $request;
+    protected $log;
+    protected $phpbb_root_path;
+    protected $php_ext;
 
-    public function __construct($config, $db, $user, $auth, $request)
+    /** @var string Prefix des tables phpBB */
+    protected $table_prefix;
+
+    public function __construct($config, $db, $user, $log, $phpbb_root_path, $php_ext, $table_prefix)
     {
         $this->config = $config;
         $this->db = $db;
         $this->user = $user;
-        $this->auth = $auth;
-        $this->request = $request;
+        $this->log = $log;
+        $this->phpbb_root_path = $phpbb_root_path;
+        $this->php_ext = $php_ext;
+        $this->table_prefix = $table_prefix;
     }
 
     /**
      * Synchronise les IP bannies avec le serveur central
-     * - Pull: récupère la liste distante et fusionne
-     * - Push: optionnel, reporte les bans locaux
-     * - Journalise les actions dans ac_logs
-     * - Voir README pour le contrat d'API et la politique de fusion
+     * Récupère la liste complète et met à jour la base de données
+     * 
+     * @return array Résultat de la synchronisation avec 'success', 'added', 'removed', 'message'
      */
     public function sync()
     {
-        // Squelette: à compléter avec appel HTTP, parsing JSON, fusion, application dans banlist
-        // Exemple: $remote_ip_bans = $this->fetch_remote_ip_bans();
-        // Fusionner avec la table ac_remote_ip_bans et appliquer dans phpbb_banlist
-        // Journaliser dans ac_logs
-        // ...
+        // Vérifier si la synchronisation est activée
+        if (!$this->config['ac_enable_ip_sync'])
+        {
+            return [
+                'success' => false,
+                'message' => 'IP sync is disabled in configuration'
+            ];
+        }
+
+        $central_server_url = $this->config['ac_central_server_url'];
+        if (empty($central_server_url))
+        {
+            return [
+                'success' => false,
+                'message' => 'Central server URL not configured'
+            ];
+        }
+
+        // Récupérer la liste depuis le serveur central
+        $remote_data = $this->fetch_remote_ip_list($central_server_url);
+        
+        if (!$remote_data['success'])
+        {
+            $this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_AC_IP_SYNC_FAILED', time(), [$remote_data['message']]);
+            return $remote_data;
+        }
+
+        // Synchroniser avec la base de données locale
+        $result = $this->sync_ip_list($remote_data['ips'], $remote_data['version']);
+
+        // Logger l'action
+        if ($result['success'])
+        {
+            $this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'LOG_AC_IP_SYNC_SUCCESS', time(), [
+                $result['added'],
+                $result['removed'],
+                $result['total']
+            ]);
+        }
+
+        return $result;
     }
 
-    // protected function fetch_remote_ip_bans() { ... }
-    // protected function apply_ip_ban($ip, $cidr, $reason, ...) { ... }
-    // protected function remove_ip_ban($ip, $cidr, ...) { ... }
+    /**
+     * Récupère la liste des IP depuis le serveur central
+     * 
+     * @param string $server_url URL du serveur central
+     * @return array Résultat avec 'success', 'ips', 'version', 'message'
+     */
+    protected function fetch_remote_ip_list($server_url)
+    {
+        $api_url = rtrim($server_url, '/') . '/api/get_ips';
+
+        // Utiliser file_get_contents avec contexte
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 10,
+                'header' => "User-Agent: phpBB-ActivityControl/1.0\r\n"
+            ]
+        ]);
+
+        $response = @file_get_contents($api_url, false, $context);
+
+        if ($response === false)
+        {
+            return [
+                'success' => false,
+                'message' => 'Failed to connect to central server'
+            ];
+        }
+
+        $data = json_decode($response, true);
+
+        if (!isset($data['ips']) || !is_array($data['ips']))
+        {
+            return [
+                'success' => false,
+                'message' => 'Invalid response format from server'
+            ];
+        }
+
+        return [
+            'success' => true,
+            'ips' => $data['ips'],
+            'version' => isset($data['version']) ? $data['version'] : 0,
+            'count' => count($data['ips'])
+        ];
+    }
+
+    /**
+     * Synchronise la liste des IP avec la base de données locale
+     * 
+     * @param array $remote_ips Liste des IP depuis le serveur central
+     * @param int $version Version de la liste
+     * @return array Résultat avec statistiques
+     */
+    protected function sync_ip_list($remote_ips, $version)
+    {
+        $remote_ips_set = array_flip($remote_ips); // Pour recherche rapide
+
+        // Récupérer les IP actuellement en base
+        $sql = 'SELECT ban_ip, ban_id FROM ' . $this->table_prefix . 'banlist WHERE ban_ip != ""';
+        $result = $this->db->sql_query($sql);
+        
+        $local_ips = [];
+        $ban_ids = [];
+        while ($row = $this->db->sql_fetchrow($result))
+        {
+            $local_ips[] = $row['ban_ip'];
+            $ban_ids[$row['ban_ip']] = $row['ban_id'];
+        }
+        $this->db->sql_freeresult($result);
+
+        $local_ips_set = array_flip($local_ips);
+
+        // Calculer les différences
+        $ips_to_add = array_diff_key($remote_ips_set, $local_ips_set);
+        $ips_to_remove = array_diff_key($local_ips_set, $remote_ips_set);
+
+        $added_count = 0;
+        $removed_count = 0;
+
+        // Ajouter les nouvelles IP
+        if (!empty($ips_to_add))
+        {
+            foreach (array_keys($ips_to_add) as $ip)
+            {
+                if ($this->add_ip_ban($ip))
+                {
+                    $added_count++;
+                }
+            }
+        }
+
+        // Retirer les IP qui ne sont plus dans la liste centrale
+        if (!empty($ips_to_remove))
+        {
+            foreach (array_keys($ips_to_remove) as $ip)
+            {
+                if (isset($ban_ids[$ip]) && $this->remove_ip_ban($ban_ids[$ip]))
+                {
+                    $removed_count++;
+                }
+            }
+        }
+
+        // Mettre à jour la version et le timestamp de dernière sync
+        $this->config->set('ac_last_ip_sync', time());
+        $this->config->set('ac_ip_list_version', $version);
+
+        return [
+            'success' => true,
+            'added' => $added_count,
+            'removed' => $removed_count,
+            'total' => count($remote_ips),
+            'message' => sprintf('Sync completed: %d added, %d removed, %d total', $added_count, $removed_count, count($remote_ips))
+        ];
+    }
+
+    /**
+     * Ajoute une IP à la liste des bans phpBB
+     * 
+     * @param string $ip Adresse IP à bannir
+     * @return bool True si succès
+     */
+    protected function add_ip_ban($ip)
+    {
+        $ban_reason = $this->config['ac_ban_reason'] ?: 'Activity Control - Central Ban List';
+        $ban_give_reason = 'Automatically banned by Activity Control';
+
+        // Utiliser la fonction phpBB native pour bannir
+        if (!function_exists('user_ban'))
+        {
+            include($this->phpbb_root_path . 'includes/functions_user.' . $this->php_ext);
+        }
+
+        $result = user_ban('ip', [$ip], 0, 0, false, $ban_reason, $ban_give_reason);
+
+        return !empty($result);
+    }
+
+    /**
+     * Retire une IP de la liste des bans phpBB
+     * 
+     * @param int $ban_id ID du ban à retirer
+     * @return bool True si succès
+     */
+    protected function remove_ip_ban($ban_id)
+    {
+        if (!function_exists('user_unban'))
+        {
+            include($this->phpbb_root_path . 'includes/functions_user.' . $this->php_ext);
+        }
+
+        $result = user_unban('ip', [$ban_id]);
+
+        return $result;
+    }
+
+    /**
+     * Vérifie si une synchronisation est nécessaire
+     * Basée sur l'intervalle de temps configuré
+     * 
+     * @return bool True si une synchronisation est nécessaire
+     */
+    public function should_sync()
+    {
+        if (!$this->config['ac_enable_ip_sync'])
+        {
+            return false;
+        }
+
+        $last_sync = (int) $this->config['ac_last_ip_sync'];
+        $sync_interval = (int) $this->config['ac_ip_sync_interval'];
+
+        if ($sync_interval <= 0)
+        {
+            $sync_interval = 3600; // Par défaut 1 heure
+        }
+
+        return (time() - $last_sync) >= $sync_interval;
+    }
 }

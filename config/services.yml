@@ -11,6 +11,7 @@ services:
             - '@dbal.conn' # Service pour la base de données
             - '@group_helper' # Service pour gérer les groupes
             - '@linkguarder.activitycontrol.ip_reporter' # Service de signalement d'IPs
+            - '@linkguarder.activitycontrol.ip_ban_sync' # Service de synchronisation IP
         tags:
             - { name: event.listener }
     linkguarder.activitycontrol.controller:
@@ -28,10 +29,10 @@ services:
             - '@config'
             - '@dbal.conn'
             - '@user'
-            - '@auth'
-            - '@request'
-        tags:
-            - { name: cron.task }
+            - '@log'
+            - '%core.root_path%'
+            - '%core.php_ext%'
+            - '%tables.prefix%'
 
     # Service de signalement d'IPs au serveur central
     linkguarder.activitycontrol.ip_reporter:

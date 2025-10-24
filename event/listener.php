@@ -38,12 +38,16 @@ class listener implements EventSubscriberInterface
     
     /** @var \linkguarder\activitycontrol\service\ip_reporter */
     protected $ip_reporter;
+    
+    /** @var \linkguarder\activitycontrol\service\ip_ban_sync */
+    protected $ip_ban_sync;
 
     public function __construct(
         \phpbb\controller\helper $helper, \phpbb\template\template $template, \phpbb\config\config $config,
         \phpbb\user $user, \phpbb\auth\auth $auth, \phpbb\language\language $language,
         \phpbb\db\driver\driver_interface $db, \phpbb\group\helper $group_helper,
-        \linkguarder\activitycontrol\service\ip_reporter $ip_reporter
+        \linkguarder\activitycontrol\service\ip_reporter $ip_reporter,
+        \linkguarder\activitycontrol\service\ip_ban_sync $ip_ban_sync
     ) {
         $this->helper = $helper;
         $this->template = $template;
@@ -54,12 +58,14 @@ class listener implements EventSubscriberInterface
         $this->db = $db;
         $this->group_helper = $group_helper;
         $this->ip_reporter = $ip_reporter;
+        $this->ip_ban_sync = $ip_ban_sync;
     }
 
     static public function getSubscribedEvents()
     {
         return [
             'core.user_setup'	                => 'load_language_on_setup',
+            'core.page_header'                  => 'check_ip_sync', // Vérifier la sync IP à chaque page
             'core.page_footer_after'            => 'add_footer_logo',
             'core.submit_post_start'            => 'process_post_content',
             'core.ucp_profile_info_modify_sql_ary' => 'process_profile_and_signature',
@@ -80,6 +86,30 @@ class listener implements EventSubscriberInterface
 			'lang_set' => 'common',
 		);
 		$event['lang_set_ext'] = $lang_set_ext;
+	}
+
+	/**
+	 * Vérifie si une synchronisation des IP est nécessaire
+	 * Appelé à chaque page pour maintenir la liste à jour
+	 */
+	public function check_ip_sync($event)
+	{
+		// Ne synchroniser que si activé et nécessaire
+		if ($this->ip_ban_sync->should_sync())
+		{
+			// Synchronisation asynchrone pour ne pas ralentir le chargement
+			// En production, ceci devrait être fait via un cron job
+			// Pour l'instant, on le fait de manière synchrone
+			try 
+			{
+				$this->ip_ban_sync->sync();
+			}
+			catch (\Exception $e)
+			{
+				// Ignorer les erreurs silencieusement pour ne pas casser l'affichage
+				// Les erreurs sont déjà loggées dans le service
+			}
+		}
 	}
 
     public function process_post_content($event)

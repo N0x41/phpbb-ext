@@ -27,6 +27,44 @@
 	</dl>
 </fieldset>
 
+<fieldset>
+	<legend>{L_AC_ENABLE_IP_REPORTING}</legend>
+	<dl>
+		<dt><label for="ac_enable_ip_reporting">{L_AC_ENABLE_IP_REPORTING}</label><br><span>{L_AC_ENABLE_IP_REPORTING_EXPLAIN}</span></dt>
+		<dd><label><input type="radio" class="radio" name="ac_enable_ip_reporting" value="1"<!-- IF AC_ENABLE_IP_REPORTING -->checked="checked"<!-- ENDIF -->/> {L_YES}</label>
+			<label><input type="radio" class="radio" name="ac_enable_ip_reporting" value="0"<!-- IF not AC_ENABLE_IP_REPORTING -->checked="checked"<!-- ENDIF -->/> {L_NO}</label></dd>
+	</dl>
+	<dl>
+		<dt><label for="ac_central_server_url">{L_AC_CENTRAL_SERVER_URL}</label><br><span>{L_AC_CENTRAL_SERVER_URL_EXPLAIN}</span></dt>
+		<dd><input name="ac_central_server_url" type="text" id="ac_central_server_url" value="{AC_CENTRAL_SERVER_URL}" size="50" /></dd>
+	</dl>
+</fieldset>
+
+<fieldset>
+	<legend>{L_AC_ENABLE_IP_SYNC}</legend>
+	<dl>
+		<dt><label for="ac_enable_ip_sync">{L_AC_ENABLE_IP_SYNC}</label><br><span>{L_AC_ENABLE_IP_SYNC_EXPLAIN}</span></dt>
+		<dd><label><input type="radio" class="radio" name="ac_enable_ip_sync" value="1"<!-- IF AC_ENABLE_IP_SYNC -->checked="checked"<!-- ENDIF -->/> {L_YES}</label>
+			<label><input type="radio" class="radio" name="ac_enable_ip_sync" value="0"<!-- IF not AC_ENABLE_IP_SYNC -->checked="checked"<!-- ENDIF -->/> {L_NO}</label></dd>
+	</dl>
+	<dl>
+		<dt><label for="ac_ip_sync_interval">{L_AC_IP_SYNC_INTERVAL}</label><br><span>{L_AC_IP_SYNC_INTERVAL_EXPLAIN}</span></dt>
+		<dd><input name="ac_ip_sync_interval" type="number" id="ac_ip_sync_interval" value="{AC_IP_SYNC_INTERVAL}" /></dd>
+	</dl>
+	<dl>
+		<dt><label for="ac_ban_reason">{L_AC_BAN_REASON}</label><br><span>{L_AC_BAN_REASON_EXPLAIN}</span></dt>
+		<dd><input name="ac_ban_reason" type="text" id="ac_ban_reason" value="{AC_BAN_REASON}" size="50" /></dd>
+	</dl>
+	<dl>
+		<dt><label>{L_AC_LAST_IP_SYNC}</label></dt>
+		<dd><strong>{AC_LAST_IP_SYNC}</strong></dd>
+	</dl>
+	<dl>
+		<dt><label>{L_AC_IP_LIST_VERSION}</label></dt>
+		<dd><strong>{AC_IP_LIST_VERSION}</strong></dd>
+	</dl>
+</fieldset>
+
 <fieldset class="submit-buttons">
 	<input class="button1" type="submit" id="submit" name="submit" value="{L_SUBMIT}" />&nbsp;
 	<input class="button2" type="reset" id="reset" name="reset" value="{L_RESET}" />

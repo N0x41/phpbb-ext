@@ -49,6 +49,15 @@ class main_module
                     $config->set('ac_quarantine_posts', $request->variable('ac_quarantine_posts', 0));
                     $config->set('ac_remove_sig_links_posts', $request->variable('ac_remove_sig_links_posts', 0));
                     $config->set('ac_remove_profile_links_posts', $request->variable('ac_remove_profile_links_posts', 0));
+                    
+                    // IP Reporting settings
+                    $config->set('ac_enable_ip_reporting', $request->variable('ac_enable_ip_reporting', 0));
+                    $config->set('ac_central_server_url', $request->variable('ac_central_server_url', ''));
+                    
+                    // IP Sync settings
+                    $config->set('ac_enable_ip_sync', $request->variable('ac_enable_ip_sync', 0));
+                    $config->set('ac_ip_sync_interval', $request->variable('ac_ip_sync_interval', 3600));
+                    $config->set('ac_ban_reason', $request->variable('ac_ban_reason', ''));
 
                     trigger_error($user->lang('ACP_ACTIVITY_CONTROL_SETTING_SAVED') . adm_back_link($this->u_action));
                 }
@@ -59,6 +68,17 @@ class main_module
                     'AC_QUARANTINE_POSTS'          => $config['ac_quarantine_posts'],
                     'AC_REMOVE_SIG_LINKS_POSTS'    => $config['ac_remove_sig_links_posts'],
                     'AC_REMOVE_PROFILE_LINKS_POSTS'=> $config['ac_remove_profile_links_posts'],
+                    
+                    // IP Reporting
+                    'AC_ENABLE_IP_REPORTING'       => $config['ac_enable_ip_reporting'],
+                    'AC_CENTRAL_SERVER_URL'        => $config['ac_central_server_url'],
+                    
+                    // IP Sync
+                    'AC_ENABLE_IP_SYNC'            => $config['ac_enable_ip_sync'],
+                    'AC_IP_SYNC_INTERVAL'          => $config['ac_ip_sync_interval'],
+                    'AC_BAN_REASON'                => $config['ac_ban_reason'],
+                    'AC_LAST_IP_SYNC'              => $config['ac_last_ip_sync'] ? $user->format_date($config['ac_last_ip_sync']) : $user->lang('NEVER'),
+                    'AC_IP_LIST_VERSION'           => $config['ac_ip_list_version'],
                 ]);
                 break;
             case 'logs':
@@ -153,14 +173,21 @@ class main_module
                     }
                 }
 
-                // Synchronisation manuelle avec le serveur central (squelette)
+                // Synchronisation manuelle avec le serveur central
                 if ($request->is_set_post('sync_ip_bans')) {
-                    // Ici, on appellerait le service de synchronisation (voir README)
-                    // Exemple: $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync')->sync();
-                    // Pour la documentation, on logue l'action
-                    // $db->sql_query('INSERT INTO ...ac_logs ... ip_ban_sync_started ...');
-                    // Afficher un message de succès
-                    trigger_error('Synchronisation IP bans lancée (squelette, à implémenter).' . adm_back_link($this->u_action));
+                    if (!check_form_key('linkguarder/activitycontrol')) {
+                        trigger_error('FORM_INVALID');
+                    }
+                    
+                    // Appeler le service de synchronisation
+                    $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
+                    $result = $ip_ban_sync->sync();
+                    
+                    if ($result['success']) {
+                        trigger_error($result['message'] . adm_back_link($this->u_action));
+                    } else {
+                        trigger_error('Error: ' . $result['message'] . adm_back_link($this->u_action), E_USER_WARNING);
+                    }
                 }
 
                 // Affichage de la liste des IP bannies (locales et distantes)
