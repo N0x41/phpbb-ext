@@ -53,43 +53,20 @@ class ext extends \phpbb\extension\base
         switch ($old_state)
         {
             case '': // Empty means nothing has run yet
-                // Forcer une synchronisation immédiate des IP
-                try
+                // Marquer pour synchronisation au premier chargement de page
+                // On ne peut pas faire la sync ici car les services ne sont pas encore chargés
+                global $phpbb_container;
+                
+                if ($phpbb_container && $phpbb_container->has('config'))
                 {
-                    global $phpbb_container;
-                    
-                    if ($phpbb_container->has('linkguarder.activitycontrol.ip_ban_sync'))
-                    {
-                        $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
-                        
-                        // Forcer la synchronisation en mettant ac_last_ip_sync à 0
-                        // (déjà fait dans la migration, mais on s'assure)
-                        $config = $phpbb_container->get('config');
-                        $config->set('ac_last_ip_sync', 0);
-                        
-                        // Lancer la synchronisation
-                        $result = $ip_ban_sync->sync();
-                        
-                        // Logger le résultat
-                        if ($result['success'])
-                        {
-                            $log = $phpbb_container->get('log');
-                            $user = $phpbb_container->get('user');
-                            $log->add('admin', $user->data['user_id'], $user->ip, 'LOG_AC_IP_SYNC_SUCCESS', time(), [
-                                $result['added'],
-                                $result['removed'],
-                                $result['total']
-                            ]);
-                        }
-                    }
-                }
-                catch (\Exception $e)
-                {
-                    // En cas d'erreur, on continue l'activation quand même
-                    // L'erreur sera visible dans les logs phpBB
+                    $config = $phpbb_container->get('config');
+                    // Forcer ac_last_ip_sync à 0 pour déclencher une sync au premier chargement
+                    $config->set('ac_last_ip_sync', 0);
+                    // Marquer l'activation pour déclencher sync immédiate
+                    $config->set('ac_first_activation', 1);
                 }
                 
-                return 'sync_complete';
+                return 'sync_marked';
                 
             default:
                 return parent::enable_step($old_state);

@@ -94,15 +94,31 @@ class listener implements EventSubscriberInterface
 	 */
 	public function check_ip_sync($event)
 	{
-		// Ne synchroniser que si activé et nécessaire
-		if ($this->ip_ban_sync->should_sync())
+		// Vérifier si c'est la première activation
+		$first_activation = isset($this->config['ac_first_activation']) && $this->config['ac_first_activation'] == 1;
+		
+		// Forcer la sync si première activation ou si l'intervalle est écoulé
+		if ($first_activation || $this->ip_ban_sync->should_sync())
 		{
 			// Synchronisation asynchrone pour ne pas ralentir le chargement
 			// En production, ceci devrait être fait via un cron job
 			// Pour l'instant, on le fait de manière synchrone
 			try 
 			{
+				// Augmenter le timeout pour la première sync (beaucoup d'IPs)
+				if ($first_activation)
+				{
+					@set_time_limit(300);
+					@ini_set('max_execution_time', '300');
+				}
+				
 				$this->ip_ban_sync->sync();
+				
+				// Désactiver le flag de première activation
+				if ($first_activation)
+				{
+					$this->config->set('ac_first_activation', 0);
+				}
 			}
 			catch (\Exception $e)
 			{

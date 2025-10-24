@@ -115,6 +115,7 @@ class install_v1_0_0 extends \phpbb\db\migration\migration
             ['config.add', ['ac_last_ip_sync', 0]], // Timestamp de la dernière sync (0 = force sync immédiate)
             ['config.add', ['ac_ip_list_version', 0]], // Version de la liste
             ['config.add', ['ac_ban_reason', 'Activity Control - Central Ban List']], // Raison du ban
+            ['config.add', ['ac_first_activation', 1]], // Flag pour forcer sync au premier chargement
             
             // === Signalement d'IP au serveur central ===
             ['config.add', ['ac_enable_ip_reporting', 1]], // ACTIVÉ par défaut
@@ -177,6 +178,12 @@ class install_v1_0_0 extends \phpbb\db\migration\migration
             ['config.remove', ['ac_ipban_post_local']],
             ['config.remove', ['ac_enable_ip_reporting']],
             ['config.remove', ['ac_central_server_url']],
+            ['config.remove', ['ac_enable_ip_sync']],
+            ['config.remove', ['ac_ip_sync_interval']],
+            ['config.remove', ['ac_last_ip_sync']],
+            ['config.remove', ['ac_ip_list_version']],
+            ['config.remove', ['ac_ban_reason']],
+            ['config.remove', ['ac_first_activation']],
             
             // Suppression des modules
             ['module.remove', [
