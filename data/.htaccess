@@ -1,0 +1,3 @@
+# Interdire l'accès direct aux fichiers sensibles
+Order deny,allow
+Deny from all

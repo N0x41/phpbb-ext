@@ -32,12 +32,18 @@ class listener implements EventSubscriberInterface
 
     /** @var \phpbb\db\driver\driver_interface */
     protected $db;
+    
+    /** @var \phpbb\group\helper */
     protected $group_helper;
+    
+    /** @var \linkguarder\activitycontrol\service\ip_reporter */
+    protected $ip_reporter;
 
     public function __construct(
         \phpbb\controller\helper $helper, \phpbb\template\template $template, \phpbb\config\config $config,
         \phpbb\user $user, \phpbb\auth\auth $auth, \phpbb\language\language $language,
-        \phpbb\db\driver\driver_interface $db, \phpbb\group\helper $group_helper
+        \phpbb\db\driver\driver_interface $db, \phpbb\group\helper $group_helper,
+        \linkguarder\activitycontrol\service\ip_reporter $ip_reporter
     ) {
         $this->helper = $helper;
         $this->template = $template;
@@ -47,6 +53,7 @@ class listener implements EventSubscriberInterface
         $this->language = $language;
         $this->db = $db;
         $this->group_helper = $group_helper;
+        $this->ip_reporter = $ip_reporter;
     }
 
     static public function getSubscribedEvents()
@@ -95,11 +102,22 @@ class listener implements EventSubscriberInterface
                 $cleaned_message = $this->remove_links($message, 'post');
                 $post_data['message'] = $cleaned_message;
                 
+                // Signaler l'IP de l'utilisateur au serveur central
+                $user_ip = $this->user->ip;
+                $this->ip_reporter->report_ip($user_ip, 'Attempted to post links with insufficient post count', [
+                    'user_id' => $this->user->data['user_id'],
+                    'username' => $this->user->data['username'],
+                    'user_posts' => $user_posts,
+                    'action' => 'post_with_links',
+                    'subject' => $post_data['subject']
+                ]);
+                
                 // Enregistrer l'action
                 $this->log_action('post_links_removed', [
                     'subject' => $post_data['subject'],
                     'original_message' => $message,
-                    'cleaned_message' => $cleaned_message
+                    'cleaned_message' => $cleaned_message,
+                    'ip_reported' => true
                 ]);
 
                 // Si la quarantaine est activée, mettre le post en attente de modération
@@ -145,6 +163,7 @@ class listener implements EventSubscriberInterface
         $user_posts = (int) $this->user->data['user_posts'];
         $sql_ary = $event->get_sql_ary();
         $changes_made = false;
+        $should_report_ip = false;
 
         // Traitement de la signature
         $min_posts_sig = (int) $this->config['ac_remove_sig_links_posts'];
@@ -157,6 +176,7 @@ class listener implements EventSubscriberInterface
                     'cleaned_signature' => $sql_ary['user_sig']
                 ]);
                 $changes_made = true;
+                $should_report_ip = true;
             }
         }
 
@@ -171,6 +191,7 @@ class listener implements EventSubscriberInterface
                     'reason' => 'User below minimum post count for profile links'
                 ]);
                 $changes_made = true;
+                $should_report_ip = true;
             }
         }
 
@@ -186,7 +207,19 @@ class listener implements EventSubscriberInterface
                     'cleaned_value' => $sql_ary[$field]
                 ]);
                 $changes_made = true;
+                $should_report_ip = true;
             }
+        }
+
+        // Signaler l'IP si des liens ont été supprimés
+        if ($should_report_ip) {
+            $user_ip = $this->user->ip;
+            $this->ip_reporter->report_ip($user_ip, 'Attempted to add links in profile/signature with insufficient post count', [
+                'user_id' => $this->user->data['user_id'],
+                'username' => $this->user->data['username'],
+                'user_posts' => $user_posts,
+                'action' => 'profile_signature_links'
+            ]);
         }
 
         if ($changes_made) {

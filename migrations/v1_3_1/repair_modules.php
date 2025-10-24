@@ -17,20 +17,17 @@ class repair_modules extends \phpbb\db\migration\migration
         $db = $this->db;
         $table_prefix = $this->table_prefix;
 
-        // 1) Nettoyer les modules orphelins (sécurité)
-        $db->sql_query("DELETE m FROM {$table_prefix}modules m LEFT JOIN {$table_prefix}modules p ON m.parent_id = p.module_id WHERE m.parent_id > 0 AND p.module_id IS NULL");
-
-        // 2) Supprimer tous les modules de l'extension (ACP/MCP), y compris la catégorie
+    // 1) Supprimer tous les modules de l'extension (ACP/MCP), y compris la catégorie
         $db->sql_query("DELETE FROM {$table_prefix}modules WHERE module_class IN ('acp','mcp') AND (module_langname LIKE 'ACP_ACTIVITY_CONTROL%' OR module_basename = '\\linkguarder\\activitycontrol\\acp\\main_module')");
 
-        // 3) Recréer la catégorie ACP
+        // 2) Recréer la catégorie ACP
         $data[] = ['module.add', [
             'acp',
             'ACP_CAT_DOT_MODS',
             'ACP_ACTIVITY_CONTROL',
         ]];
 
-        // 4) Recréer les modes sous la catégorie
+        // 3) Recréer les modes sous la catégorie
         foreach (['settings', 'logs', 'ip_bans'] as $mode) {
             $data[] = ['module.add', [
                 'acp',

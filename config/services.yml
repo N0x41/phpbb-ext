@@ -10,6 +10,7 @@ services:
             - '@language'
             - '@dbal.conn' # Service pour la base de données
             - '@group_helper' # Service pour gérer les groupes
+            - '@linkguarder.activitycontrol.ip_reporter' # Service de signalement d'IPs
         tags:
             - { name: event.listener }
     linkguarder.activitycontrol.controller:
@@ -20,7 +21,7 @@ services:
             - '@template'
             - '@user'
 
-    # Squelette du service de synchronisation IP bans (à implémenter)
+    # Service de synchronisation IP bans
     linkguarder.activitycontrol.ip_ban_sync:
         class: linkguarder\activitycontrol\service\ip_ban_sync
         arguments:
@@ -31,3 +32,11 @@ services:
             - '@request'
         tags:
             - { name: cron.task }
+
+    # Service de signalement d'IPs au serveur central
+    linkguarder.activitycontrol.ip_reporter:
+        class: linkguarder\activitycontrol\service\ip_reporter
+        arguments:
+            - '@config'
+            - '@log'
+            - '%core.root_path%ext/linkguarder/activitycontrol'
