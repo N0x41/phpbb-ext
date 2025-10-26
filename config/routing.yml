@@ -1,7 +1,3 @@
-linkguarder_activitycontrol_controller:
-    path: /activitycontrol/{name}
-    defaults: { _controller: linkguarder.activitycontrol.controller:handle }
-
 linkguarder_activitycontrol_webhook:
     path: /activitycontrol/webhook/notify
     defaults: { _controller: linkguarder.activitycontrol.controller:webhook_notification }
@@ -11,3 +7,7 @@ linkguarder_activitycontrol_node_query:
     path: /activitycontrol/api/query
     defaults: { _controller: linkguarder.activitycontrol.controller:node_query }
     methods: [POST]
+
+linkguarder_activitycontrol_controller:
+    path: /activitycontrol/{name}
+    defaults: { _controller: linkguarder.activitycontrol.controller:handle }
