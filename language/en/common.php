@@ -117,6 +117,14 @@ $lang = array_merge($lang, [
     'LOG_AC_IP_SYNC_SUCCESS'        => 'IP sync completed: %d added, %d removed, %d total',
     'LOG_AC_IP_SYNC_FAILED'         => 'IP sync failed: %s',
     
+    // Webhook notifications
+    'LOG_AC_WEBHOOK_RECEIVED'       => 'Webhook notification received: version %d, %d IPs, at %s',
+    'LOG_AC_REMOTE_SYNC_TRIGGERED'  => 'Remote sync triggered by server: %d added, %d removed, %d total',
+    'AC_WEBHOOK_URL'                => 'Webhook URL',
+    'AC_WEBHOOK_URL_EXPLAIN'        => 'This URL should be configured in the RogueBB server to receive automatic notifications when the IP list is updated.',
+    'AC_NODE_QUERY_URL'             => 'Node Query URL',
+    'AC_NODE_QUERY_URL_EXPLAIN'     => 'This URL allows the RogueBB server to query this node for status, statistics, and trigger actions.',
+    
     // Bouton de synchronisation manuelle
     'AC_SYNC_NOW_TITLE'             => 'Manual synchronization',
     'AC_SYNC_NOW'                   => 'Sync Now',
