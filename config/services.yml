@@ -21,6 +21,11 @@ services:
             - '@controller.helper'
             - '@template'
             - '@user'
+            - '@request'
+            - '@log'
+            - '@linkguarder.activitycontrol.ip_ban_sync'
+            - '@dbal.conn'
+            - '%core.root_path%ext/linkguarder/activitycontrol'
 
     # Service de synchronisation IP bans
     linkguarder.activitycontrol.ip_ban_sync:
