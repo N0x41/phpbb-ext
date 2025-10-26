@@ -1,4 +1,4 @@
-# 🛡️ Activity Control - Extension phpBB# LinkGuarder Activity Control (phpBB 3.3.x)
+# 🛡️ Activity Control - Extension (phpBB 3.3.x)
 
 
 
