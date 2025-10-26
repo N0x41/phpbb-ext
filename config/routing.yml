@@ -4,12 +4,10 @@ linkguarder_activitycontrol_webhook:
     methods: [POST]
 
 linkguarder_activitycontrol_node_query:
-    path: /activitycontrol/api/query
+    path: /activitycontrol/query
     defaults: { _controller: linkguarder.activitycontrol.controller:node_query }
     methods: [POST]
 
 linkguarder_activitycontrol_controller:
     path: /activitycontrol/{name}
     defaults: { _controller: linkguarder.activitycontrol.controller:handle }
-    requirements:
-        name: (?!api|webhook).*
