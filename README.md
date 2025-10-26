@@ -1,12 +1,8 @@
-<<<<<<< HEAD
-# 🛡️ Activity Control - Extension phpBB
-=======
 # 🛡️ Activity Control - Extension (phpBB 3.3.x)
 
 
 
 **Version:** 1.0.0  Extension phpBB 3.3.x pour contrôler l’activité des utilisateurs, limiter les liens selon le nombre de messages, journaliser les actions et (conception incluse) gérer une liste d’IP bannies synchronisée avec un serveur central. Toute la configuration se fait depuis l’ACP.
->>>>>>> 58b0971d42b0c967b523dba0798d8bfc3fcd7004
 
 **Version:** 1.0.0  
 **Auteur:** LinkGuarder Team  
