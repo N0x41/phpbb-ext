@@ -59,12 +59,6 @@ class main
 		$this->ext_path = $ext_path;
     }
 
-    public function handle()
-    {
-		$this->template->assign_var('DEMO_MESSAGE', $this->user->lang('MIN_POSTS_FOR_LINKS', (int) $this->config['min_posts_for_links']));
-		return $this->helper->render('body.html');
-    }
-
 	/**
 	 * Endpoint pour recevoir les notifications du serveur RogueBB
 	 * Appelé automatiquement quand la liste d'IPs est mise à jour
