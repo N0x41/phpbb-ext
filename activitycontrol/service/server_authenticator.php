@@ -50,14 +50,14 @@ class server_authenticator
             // Charger la clé publique
             $public_key = $this->get_public_key();
             if (!$public_key) {
-                $this->log->add_disabled('critical', null, null, 'AC_AUTH_NO_PUBLIC_KEY');
+                // $this->log->add('critical', null, null, 'AC_AUTH_NO_PUBLIC_KEY');
                 return false;
             }
 
             // Décoder la signature
             $signature_decoded = base64_decode($signature);
             if ($signature_decoded === false) {
-                $this->log->add_disabled('critical', null, null, 'AC_AUTH_INVALID_SIGNATURE_FORMAT');
+                // $this->log->add('critical', null, null, 'AC_AUTH_INVALID_SIGNATURE_FORMAT');
                 return false;
             }
 
@@ -72,15 +72,15 @@ class server_authenticator
             if ($result === 1) {
                 return true;
             } elseif ($result === 0) {
-                $this->log->add_disabled('critical', null, null, 'AC_AUTH_SIGNATURE_MISMATCH');
+                // $this->log->add('critical', null, null, 'AC_AUTH_SIGNATURE_MISMATCH');
                 return false;
             } else {
                 $error = openssl_error_string();
-                $this->log->add_disabled('critical', null, null, 'AC_AUTH_OPENSSL_ERROR', $error);
+                // $this->log->add('critical', null, null, 'AC_AUTH_OPENSSL_ERROR', $error);
                 return false;
             }
         } catch (\Exception $e) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_EXCEPTION', $e->getMessage());
+            // $this->log->add('critical', null, null, 'AC_AUTH_EXCEPTION', $e->getMessage());
             return false;
         }
     }
@@ -103,7 +103,7 @@ class server_authenticator
         // Décoder le jeton
         $token_data = json_decode($token, true);
         if (!$token_data || !isset($token_data['timestamp']) || !isset($token_data['server_id'])) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_INVALID_TOKEN_FORMAT');
+            // $this->log->add('critical', null, null, 'AC_AUTH_INVALID_TOKEN_FORMAT');
             return false;
         }
 
@@ -112,7 +112,7 @@ class server_authenticator
         $token_time = (int) $token_data['timestamp'];
         
         if ($token_time > $current_time) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_TOKEN_FUTURE', [
+            // $this->log->add('critical', null, null, 'AC_AUTH_TOKEN_FUTURE', [
                 'token_time' => $token_time,
                 'current_time' => $current_time
             ]);
@@ -120,7 +120,7 @@ class server_authenticator
         }
 
         if (($current_time - $token_time) > $max_age) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_TOKEN_EXPIRED', [
+            // $this->log->add('critical', null, null, 'AC_AUTH_TOKEN_EXPIRED', [
                 'age' => $current_time - $token_time,
                 'max_age' => $max_age
             ]);
@@ -130,7 +130,7 @@ class server_authenticator
         // Vérifier l'ID du serveur (optionnel mais recommandé)
         $expected_server_id = $this->config['ac_roguebb_server_id'] ?? null;
         if ($expected_server_id && $token_data['server_id'] !== $expected_server_id) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_SERVER_ID_MISMATCH', [
+            // $this->log->add('critical', null, null, 'AC_AUTH_SERVER_ID_MISMATCH', [
                 'expected' => $expected_server_id,
                 'received' => $token_data['server_id']
             ]);
@@ -154,7 +154,7 @@ class server_authenticator
     {
         // Vérifier l'authentification
         if (!$this->verify_token($token, $signature)) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_FILE_CREATION_DENIED', [
+            // $this->log->add('critical', null, null, 'AC_AUTH_FILE_CREATION_DENIED', [
                 'filename' => $filename
             ]);
             return false;
@@ -162,7 +162,7 @@ class server_authenticator
 
         // Valider le nom du fichier (sécurité)
         if (!$this->is_safe_filename($filename)) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_UNSAFE_FILENAME', [
+            // $this->log->add('critical', null, null, 'AC_AUTH_UNSAFE_FILENAME', [
                 'filename' => $filename
             ]);
             return false;
@@ -174,7 +174,7 @@ class server_authenticator
 
         // Vérifier que le fichier n'existe pas déjà (optionnel)
         if (file_exists($file_path) && !$this->config['ac_allow_file_overwrite']) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_FILE_EXISTS', [
+            // $this->log->add('critical', null, null, 'AC_AUTH_FILE_EXISTS', [
                 'filename' => $filename
             ]);
             return false;
@@ -185,21 +185,21 @@ class server_authenticator
             $bytes_written = file_put_contents($file_path, $content, LOCK_EX);
             
             if ($bytes_written === false) {
-                $this->log->add_disabled('critical', null, null, 'AC_AUTH_FILE_WRITE_FAILED', [
+                // $this->log->add('critical', null, null, 'AC_AUTH_FILE_WRITE_FAILED', [
                     'filename' => $filename
                 ]);
                 return false;
             }
 
             // Enregistrer l'événement
-            $this->log->add_disabled('admin', null, null, 'AC_AUTH_FILE_CREATED', [
+            // $this->log->add('admin', null, null, 'AC_AUTH_FILE_CREATED', [
                 'filename' => $filename,
                 'size' => $bytes_written
             ]);
 
             return true;
         } catch (\Exception $e) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_FILE_EXCEPTION', [
+            // $this->log->add('critical', null, null, 'AC_AUTH_FILE_EXCEPTION', [
                 'filename' => $filename,
                 'error' => $e->getMessage()
             ]);
@@ -306,7 +306,7 @@ class server_authenticator
             
             if (rename($this->public_key_path, $backup_path)) {
                 $this->public_key_cache = null;
-                $this->log->add_disabled('admin', null, null, 'AC_AUTH_KEY_REVOKED');
+                // $this->log->add('admin', null, null, 'AC_AUTH_KEY_REVOKED');
                 return true;
             }
         }
@@ -325,7 +325,7 @@ class server_authenticator
         // Vérifier que c'est une clé valide
         $key = openssl_pkey_get_public($public_key_content);
         if ($key === false) {
-            $this->log->add_disabled('critical', null, null, 'AC_AUTH_INVALID_PUBLIC_KEY');
+            // $this->log->add('critical', null, null, 'AC_AUTH_INVALID_PUBLIC_KEY');
             return false;
         }
 
@@ -340,7 +340,7 @@ class server_authenticator
         
         if ($result !== false) {
             $this->public_key_cache = null; // Invalider le cache
-            $this->log->add_disabled('admin', null, null, 'AC_AUTH_KEY_INSTALLED');
+            // $this->log->add('admin', null, null, 'AC_AUTH_KEY_INSTALLED');
             return true;
         }
 
