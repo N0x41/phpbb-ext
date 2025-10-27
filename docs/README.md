@@ -1,13 +1,17 @@
-# 🛡️ Activity Control - Extension (phpBB 3.3.x)
+# 🛡️ Activity Control - Extension phpBB 3.3.x
 
+[← Retour au README principal](../README.md) | [📚 Index documentation](INDEX.md) | [→ Documentation RogueBB](../roguebb/docs/INDEX.md)
 
-
-**Version:** 1.0.0  Extension phpBB 3.3.x pour contrôler l’activité des utilisateurs, limiter les liens selon le nombre de messages, journaliser les actions et (conception incluse) gérer une liste d’IP bannies synchronisée avec un serveur central. Toute la configuration se fait depuis l’ACP.
+---
 
 **Version:** 1.0.0  
 **Auteur:** LinkGuarder Team  
 **Licence:** GPL-2.0-only  
 **Compatibilité:** phpBB 3.3.1+, PHP 7.4+
+
+Extension phpBB 3.3.x pour contrôler l'activité des utilisateurs, limiter les liens selon le nombre de messages, journaliser les actions et gérer une liste d'IP bannies synchronisée avec un serveur central. Toute la configuration se fait depuis l'ACP.
+
+
 
 Extension phpBB complète pour le contrôle de l'activité des utilisateurs, la gestion des liens spam et le signalement automatique des IPs suspectes vers un serveur central sécurisé.
 

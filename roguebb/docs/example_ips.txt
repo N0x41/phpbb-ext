@@ -1,0 +1,16 @@
+# Fichier d'exemple pour soumettre des IPs en masse
+# Les lignes commençant par # sont ignorées
+# Une IP par ligne
+
+# IPs suspectes détectées
+192.168.1.150
+192.168.1.151
+10.0.0.100
+
+# IPs de spam
+203.0.113.45
+198.51.100.78
+
+# IPs de tentatives d'intrusion
+45.33.32.156
+185.220.101.5

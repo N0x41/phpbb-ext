@@ -3,8 +3,8 @@
 # Script de synchronisation de l'extension vers le serveur phpBB
 # Usage: ./sync_to_server.sh
 
-SOURCE_DIR="/home/nox/Documents/phpbb-ext/activitycontrol"
-TARGET_DIR="/home/nox/Documents/NiMP/var/www/forum/ext/linkguarder/activitycontrol"
+SOURCE_DIR="$HOME/Documents/phpbb-ext/activitycontrol"
+TARGET_DIR="$HOME/Documents/NiMP/var/www/forum/ext/linkguarder/activitycontrol"
 
 echo "Synchronisation de l'extension vers le serveur..."
 rsync -av --delete "$SOURCE_DIR/" "$TARGET_DIR/"
