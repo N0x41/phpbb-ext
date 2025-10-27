@@ -69,7 +69,7 @@ Cela génère :
 La clé publique est automatiquement copiée dans l'extension :
 
 ```bash
-cp roguebb/server/public_key.pem activitycontrol/data/roguebb_public_key.pem
+cp roguebb/server/public_key.pem activitycontrol/data/pkem
 ```
 
 ## 📡 API: Écriture authentifiée
@@ -448,7 +448,7 @@ for node in nodes:
 ```php
 // Via l'ACP ou script
 $authenticator->revoke_public_key();
-// Renomme la clé en roguebb_public_key.pem.revoked.1698765432
+// Renomme la clé en pkem.revoked.1698765432
 ```
 
 ### Installer une nouvelle clé
