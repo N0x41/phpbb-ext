@@ -59,13 +59,12 @@ PRIVATE_KEY = load_private_key()
 
 # --- Gestion de la persistence des nœuds ---
 def save_nodes():
-    """Sauvegarde la liste des nœuds dans nodes.json"""
+    """Sauvegarde la liste des nœuds dans nodes.json (doit être appelé AVEC data_lock déjà acquis)"""
     try:
-        with data_lock:
-            nodes_data = {
-                'last_updated': time.time(),
-                'nodes': NODES
-            }
+        nodes_data = {
+            'last_updated': time.time(),
+            'nodes': NODES
+        }
         
         with open(NODES_DB_PATH, 'w') as f:
             json.dump(nodes_data, f, indent=2)
