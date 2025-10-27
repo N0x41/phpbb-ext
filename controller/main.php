@@ -7,8 +7,6 @@
  */
 namespace linkguarder\activitycontrol\controller;
 
-use Symfony\Component\HttpFoundation\JsonResponse;
-
 class main
 {
 	/* @var \phpbb\config\config */
@@ -65,17 +63,18 @@ class main
 	 * Endpoint pour recevoir les notifications du serveur RogueBB
 	 * Appelé automatiquement quand la liste d'IPs est mise à jour
 	 * 
-	 * @return \Symfony\Component\HttpFoundation\JsonResponse
+	 * @return void
 	 */
 	public function webhook_notification()
 	{
 		// Vérifier que c'est une requête POST
 		if ($this->request->server('REQUEST_METHOD') !== 'POST')
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'Only POST requests are allowed'
-			], 405);
+			]);
 		}
 
 		// Récupérer les données JSON
@@ -84,19 +83,21 @@ class main
 
 		if (!$data || !isset($data['event']))
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'Invalid JSON data'
-			], 400);
+			]);
 		}
 
 		// Vérifier le type d'événement
 		if ($data['event'] !== 'ip_list_updated')
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'Unknown event type'
-			], 400);
+			]);
 		}
 
 		// Extraire les informations
@@ -114,7 +115,8 @@ class main
 		// Vérifier si la synchronisation automatique est activée
 		if (!$this->config['ac_enable_ip_sync'])
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'ok',
 				'message' => 'Notification received but auto-sync is disabled',
 				'synced' => false
@@ -126,7 +128,8 @@ class main
 
 		if ($sync_result['success'])
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'ok',
 				'message' => 'IP list synchronized successfully',
 				'synced' => true,
@@ -139,11 +142,12 @@ class main
 		}
 		else
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'Synchronization failed: ' . $sync_result['message'],
 				'synced' => false
-			], 500);
+			]);
 		}
 	}
 
@@ -151,17 +155,18 @@ class main
 	 * Endpoint pour recevoir des requêtes du serveur RogueBB
 	 * Permet au serveur d'interroger le nœud pour obtenir des informations
 	 * 
-	 * @return \Symfony\Component\HttpFoundation\JsonResponse
+	 * @return void
 	 */
 	public function node_query()
 	{
 		// Vérifier que c'est une requête POST
 		if ($this->request->server('REQUEST_METHOD') !== 'POST')
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'Only POST requests are allowed'
-			], 405);
+			]);
 		}
 
 		// Récupérer les données JSON
@@ -170,10 +175,11 @@ class main
 
 		if (!$data || !isset($data['query']))
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'Invalid JSON data or missing query parameter'
-			], 400);
+			]);
 		}
 
 		$query_type = $data['query'];
@@ -182,36 +188,43 @@ class main
 		switch ($query_type)
 		{
 			case 'status':
-				return $this->handle_status_query();
+				$this->handle_status_query();
+				break;
 
 			case 'stats':
-				return $this->handle_stats_query();
+				$this->handle_stats_query();
+				break;
 
 			case 'sync_now':
-				return $this->handle_sync_now_query();
+				$this->handle_sync_now_query();
+				break;
 
 			case 'local_ips':
-				return $this->handle_local_ips_query();
+				$this->handle_local_ips_query();
+				break;
 
 			case 'reported_ips':
-				return $this->handle_reported_ips_query();
+				$this->handle_reported_ips_query();
+				break;
 
 			default:
-				return new JsonResponse([
+				$json_response = new \phpbb\json_response();
+				$json_response->send([
 					'status' => 'error',
 					'message' => 'Unknown query type: ' . $query_type
-				], 400);
+				]);
 		}
 	}
 
 	/**
 	 * Gère la requête de statut
 	 * 
-	 * @return \Symfony\Component\HttpFoundation\JsonResponse
+	 * @return void
 	 */
 	protected function handle_status_query()
 	{
-		return new JsonResponse([
+		$json_response = new \phpbb\json_response();
+		$json_response->send([
 			'status' => 'ok',
 			'node_type' => 'phpbb_forum',
 			'extension_version' => '1.0.0',
@@ -228,7 +241,7 @@ class main
 	/**
 	 * Gère la requête de statistiques
 	 * 
-	 * @return \Symfony\Component\HttpFoundation\JsonResponse
+	 * @return void
 	 */
 	protected function handle_stats_query()
 	{
@@ -248,7 +261,8 @@ class main
 		$total_posts = (int)$this->config['num_posts'];
 		$total_topics = (int)$this->config['num_topics'];
 
-		return new JsonResponse([
+		$json_response = new \phpbb\json_response();
+		$json_response->send([
 			'status' => 'ok',
 			'stats' => [
 				'banned_ips' => $total_banned_ips,
@@ -265,16 +279,17 @@ class main
 	/**
 	 * Gère la requête de synchronisation immédiate
 	 * 
-	 * @return \Symfony\Component\HttpFoundation\JsonResponse
+	 * @return void
 	 */
 	protected function handle_sync_now_query()
 	{
 		if (!$this->config['ac_enable_ip_sync'])
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'IP synchronization is disabled on this node'
-			], 403);
+			]);
 		}
 
 		$sync_result = $this->ip_ban_sync->sync();
@@ -287,7 +302,8 @@ class main
 				$sync_result['total']
 			]);
 
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'ok',
 				'message' => 'Synchronization completed',
 				'stats' => [
@@ -300,17 +316,18 @@ class main
 		}
 		else
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'error',
 				'message' => 'Synchronization failed: ' . $sync_result['message']
-			], 500);
+			]);
 		}
 	}
 
 	/**
 	 * Gère la requête des IPs locales bannies
 	 * 
-	 * @return \Symfony\Component\HttpFoundation\JsonResponse
+	 * @return void
 	 */
 	protected function handle_local_ips_query()
 	{
@@ -324,7 +341,8 @@ class main
 		}
 		$this->db->sql_freeresult($result);
 
-		return new JsonResponse([
+		$json_response = new \phpbb\json_response();
+		$json_response->send([
 			'status' => 'ok',
 			'ips' => $ips,
 			'count' => count($ips),
@@ -336,7 +354,7 @@ class main
 	/**
 	 * Gère la requête des IPs signalées par ce nœud
 	 * 
-	 * @return \Symfony\Component\HttpFoundation\JsonResponse
+	 * @return void
 	 */
 	protected function handle_reported_ips_query()
 	{
@@ -345,7 +363,8 @@ class main
 		
 		if (!file_exists($reported_file))
 		{
-			return new JsonResponse([
+			$json_response = new \phpbb\json_response();
+			$json_response->send([
 				'status' => 'ok',
 				'ips' => [],
 				'count' => 0,
@@ -369,7 +388,8 @@ class main
 			];
 		}
 
-		return new JsonResponse([
+		$json_response = new \phpbb\json_response();
+		$json_response->send([
 			'status' => 'ok',
 			'ips' => $ips_list,
 			'count' => count($ips_list),
