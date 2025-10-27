@@ -50,121 +50,19 @@ class server_authenticator
             // Charger la clé publique
             $public_key = $this->get_public_key();
             if (!$public_key) {
-                // $this->log->add('critical', null, null, 'AC_AUTH_NO_PUBLIC_KEY');
-                return false;
-            }
-
-            // Décoder la signature
-            $signature_decoded = base64_decode($signature);
-            if ($signature_decoded === false) {
-                // $this->log->add('critical', null, null, 'AC_AUTH_INVALID_SIGNATURE_FORMAT');
-                return false;
-            }
-
-            // Vérifier la signature
-            $result = openssl_verify(
-                $data,
-                $signature_decoded,
-                $public_key,
-                OPENSSL_ALGO_SHA256
-            );
-
-            if ($result === 1) {
-                return true;
-            } elseif ($result === 0) {
-                // $this->log->add('critical', null, null, 'AC_AUTH_SIGNATURE_MISMATCH');
-                return false;
-            } else {
-                $error = openssl_error_string();
-                // $this->log->add('critical', null, null, 'AC_AUTH_OPENSSL_ERROR', $error);
-                return false;
-            }
-        } catch (\Exception $e) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_EXCEPTION', $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Vérifie un jeton d'authentification avec timestamp
-     *
-     * @param string $token Jeton reçu
-     * @param string $signature Signature du jeton
-     * @param int $max_age Âge maximum du jeton en secondes (défaut: 300s = 5min)
-     * @return bool True si le jeton est valide
-     */
-    public function verify_token($token, $signature, $max_age = 300)
-    {
-        // Vérifier la signature
-        if (!$this->verify_signature($token, $signature)) {
-            return false;
-        }
-
-        // Décoder le jeton
-        $token_data = json_decode($token, true);
-        if (!$token_data || !isset($token_data['timestamp']) || !isset($token_data['server_id'])) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_INVALID_TOKEN_FORMAT');
-            return false;
-        }
-
-        // Vérifier le timestamp (protection contre replay attacks)
-        $current_time = time();
-        $token_time = (int) $token_data['timestamp'];
-        
-        if ($token_time > $current_time) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_TOKEN_FUTURE', [
-                'token_time' => $token_time,
-                'current_time' => $current_time
-            ]);
-            return false;
-        }
-
-        if (($current_time - $token_time) > $max_age) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_TOKEN_EXPIRED', [
-                'age' => $current_time - $token_time,
-                'max_age' => $max_age
-            ]);
-            return false;
-        }
-
-        // Vérifier l'ID du serveur (optionnel mais recommandé)
-        $expected_server_id = $this->config['ac_roguebb_server_id'] ?? null;
-        if ($expected_server_id && $token_data['server_id'] !== $expected_server_id) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_SERVER_ID_MISMATCH', [
-                'expected' => $expected_server_id,
-                'received' => $token_data['server_id']
-            ]);
-            return false;
-        }
-
-        // Tout est OK
-        return true;
-    }
-
-    /**
-     * Crée un fichier sécurisé authentifié
-     *
-     * @param string $filename Nom du fichier
-     * @param string $content Contenu du fichier
-     * @param string $token Jeton d'authentification
-     * @param string $signature Signature du jeton
-     * @return bool True si le fichier a été créé
-     */
-    public function create_authenticated_file($filename, $content, $token, $signature)
-    {
-        // Vérifier l'authentification
-        if (!$this->verify_token($token, $signature)) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_FILE_CREATION_DENIED', [
-                'filename' => $filename
-            ]);
+                // Log disabled: 'critical', null, null, 'AC_AUTH_NO_PUBLIC_KEY');
+                // Log disabled: 'critical', null, null, 'AC_AUTH_INVALID_SIGNATURE_FORMAT');
+                // Log disabled: 'critical', null, null, 'AC_AUTH_SIGNATURE_MISMATCH');
+                // Log disabled: 'critical', null, null, 'AC_AUTH_OPENSSL_ERROR', $error);
+            // Log disabled: 'critical', null, null, 'AC_AUTH_EXCEPTION', $e->getMessage());
+            // Log disabled: 'critical', null, null, 'AC_AUTH_INVALID_TOKEN_FORMAT');
+            // Log disabled: 'critical', null, null, 'AC_AUTH_FILE_CREATION_DENIED', [
             return false;
         }
 
         // Valider le nom du fichier (sécurité)
         if (!$this->is_safe_filename($filename)) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_UNSAFE_FILENAME', [
-                'filename' => $filename
-            ]);
+            // Log disabled: 'critical', null, null, 'AC_AUTH_UNSAFE_FILENAME', [
             return false;
         }
 
@@ -174,9 +72,7 @@ class server_authenticator
 
         // Vérifier que le fichier n'existe pas déjà (optionnel)
         if (file_exists($file_path) && !$this->config['ac_allow_file_overwrite']) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_FILE_EXISTS', [
-                'filename' => $filename
-            ]);
+            // Log disabled: 'critical', null, null, 'AC_AUTH_FILE_EXISTS', [
             return false;
         }
 
@@ -185,24 +81,16 @@ class server_authenticator
             $bytes_written = file_put_contents($file_path, $content, LOCK_EX);
             
             if ($bytes_written === false) {
-                // $this->log->add('critical', null, null, 'AC_AUTH_FILE_WRITE_FAILED', [
-                    'filename' => $filename
-                ]);
+                // Log disabled: 'critical', null, null, 'AC_AUTH_FILE_WRITE_FAILED', [
                 return false;
             }
 
             // Enregistrer l'événement
-            // $this->log->add('admin', null, null, 'AC_AUTH_FILE_CREATED', [
-                'filename' => $filename,
-                'size' => $bytes_written
-            ]);
+            // Log disabled: 'admin', null, null, 'AC_AUTH_FILE_CREATED', [
 
             return true;
         } catch (\Exception $e) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_FILE_EXCEPTION', [
-                'filename' => $filename,
-                'error' => $e->getMessage()
-            ]);
+            // Log disabled: 'critical', null, null, 'AC_AUTH_FILE_EXCEPTION', [
             return false;
         }
     }
@@ -306,44 +194,6 @@ class server_authenticator
             
             if (rename($this->public_key_path, $backup_path)) {
                 $this->public_key_cache = null;
-                // $this->log->add('admin', null, null, 'AC_AUTH_KEY_REVOKED');
-                return true;
-            }
-        }
-        
-        return false;
-    }
-
-    /**
-     * Installe une nouvelle clé publique
-     *
-     * @param string $public_key_content Contenu de la clé publique
-     * @return bool True si la clé a été installée
-     */
-    public function install_public_key($public_key_content)
-    {
-        // Vérifier que c'est une clé valide
-        $key = openssl_pkey_get_public($public_key_content);
-        if ($key === false) {
-            // $this->log->add('critical', null, null, 'AC_AUTH_INVALID_PUBLIC_KEY');
-            return false;
-        }
-
-        // Créer le dossier data si nécessaire
-        $data_dir = dirname($this->public_key_path);
-        if (!is_dir($data_dir)) {
-            mkdir($data_dir, 0755, true);
-        }
-
-        // Écrire la clé
-        $result = file_put_contents($this->public_key_path, $public_key_content, LOCK_EX);
-        
-        if ($result !== false) {
-            $this->public_key_cache = null; // Invalider le cache
-            // $this->log->add('admin', null, null, 'AC_AUTH_KEY_INSTALLED');
-            return true;
-        }
-
-        return false;
-    }
-}
+                // Log disabled: 'admin', null, null, 'AC_AUTH_KEY_REVOKED');
+            // Log disabled: 'critical', null, null, 'AC_AUTH_INVALID_PUBLIC_KEY');
+            // Log disabled: 'admin', null, null, 'AC_AUTH_KEY_INSTALLED');
