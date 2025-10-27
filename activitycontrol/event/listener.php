@@ -72,7 +72,6 @@ class listener implements EventSubscriberInterface
             'core.submit_post_end'              => 'update_user_group_status',
             'core.acp_page_header'              => 'load_acp_stylesheet',
             'core.mcp_page_header'              => 'load_mcp_stylesheet',
-            'core.page_header_after'            => 'inject_menu_logo_js',
             'core.message_parser_check_message' => 'process_message_links',
         ];
     }
@@ -239,13 +238,6 @@ class listener implements EventSubscriberInterface
         }
     }
 
-    public function inject_menu_logo_js($event)
-    {
-        if (!$this->user->page['is_acp'] && !$this->user->page['is_mcp']) {
-            return;
-        }
-    }
-
     public function set_initial_group($event)
     {
         $user_id = $event->get_user_id();
@@ -376,10 +368,6 @@ class listener implements EventSubscriberInterface
                 ]);
             }
         }
-    }
-
-    public function add_footer_logo($event)
-    {
     }
 
     private function add_user_to_group_by_name($user_id, $group_name)
