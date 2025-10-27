@@ -1,3 +1,7 @@
+# Build and release directories
+build/
+release/
+
 # Données sensibles - NE JAMAIS COMMIT
 data/private_key.pem
 data/reported_ips.json
