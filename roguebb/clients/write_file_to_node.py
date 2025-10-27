@@ -82,7 +82,7 @@ def write_authenticated_file(node_url, filename, content, private_key_path='priv
     token_json, signature_b64 = create_signed_token(private_key, server_id)
     
     # Préparer la requête
-    endpoint = f'{node_url.rstrip("/")}/app.php/ac_authenticated_write'
+    endpoint = f'{node_url.rstrip("/")}/app.php/notify'
     payload = {
         'filename': filename,
         'content': content,

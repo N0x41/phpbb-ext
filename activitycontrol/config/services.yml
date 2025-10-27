@@ -19,12 +19,9 @@ services:
         arguments:
             - '@config'
             - '@controller.helper'
-            - '@template'
             - '@user'
             - '@request'
             - '@log'
-            - '@linkguarder.activitycontrol.ip_ban_sync'
-            - '@dbal.conn'
             - '%core.root_path%ext/linkguarder/activitycontrol'
             - '@linkguarder.activitycontrol.server_authenticator'
 

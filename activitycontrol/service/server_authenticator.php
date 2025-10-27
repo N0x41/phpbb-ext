@@ -34,7 +34,7 @@ class server_authenticator
     {
         $this->log = $log;
         $this->config = $config;
-        $this->public_key_path = $ext_root_path . '/data/roguebb_public_key.pem';
+        $this->public_key_path = $ext_root_path . '/data/pkem';
     }
 
     /**

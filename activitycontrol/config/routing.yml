@@ -1,11 +1,3 @@
-linkguarder_activitycontrol_node_query:
-    path: /ac_node_query
-    defaults: { _controller: linkguarder.activitycontrol.controller:node_query }
-
-linkguarder_activitycontrol_webhook:
+linkguarder_activitycontrol_notify:
     path: /notify
-    defaults: { _controller: linkguarder.activitycontrol.controller:webhook_notification }
-
-linkguarder_activitycontrol_authenticated_write:
-    path: /ac_authenticated_write
-    defaults: { _controller: linkguarder.activitycontrol.controller:authenticated_write }
+    defaults: { _controller: linkguarder.activitycontrol.controller:notify }
