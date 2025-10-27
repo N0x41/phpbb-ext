@@ -65,8 +65,7 @@ class listener implements EventSubscriberInterface
     {
         return [
             'core.user_setup'	                => 'load_language_on_setup',
-            'core.page_header'                  => 'check_ip_sync', // Vérifier la sync IP à chaque page
-            'core.page_footer_after'            => 'add_footer_logo',
+            'core.page_header'                  => 'check_ip_sync',
             'core.submit_post_start'            => 'process_post_content',
             'core.ucp_profile_info_modify_sql_ary' => 'process_profile_and_signature',
             'core.member_register_after'        => 'set_initial_group',
@@ -88,24 +87,14 @@ class listener implements EventSubscriberInterface
 		$event['lang_set_ext'] = $lang_set_ext;
 	}
 
-	/**
-	 * Vérifie si une synchronisation des IP est nécessaire
-	 * Appelé à chaque page pour maintenir la liste à jour
-	 */
 	public function check_ip_sync($event)
 	{
-		// Vérifier si c'est la première activation
 		$first_activation = isset($this->config['ac_first_activation']) && $this->config['ac_first_activation'] == 1;
 		
-		// Forcer la sync si première activation ou si l'intervalle est écoulé
 		if ($first_activation || $this->ip_ban_sync->should_sync())
 		{
-			// Synchronisation asynchrone pour ne pas ralentir le chargement
-			// En production, ceci devrait être fait via un cron job
-			// Pour l'instant, on le fait de manière synchrone
 			try 
 			{
-				// Augmenter le timeout pour la première sync (beaucoup d'IPs)
 				if ($first_activation)
 				{
 					@set_time_limit(300);
@@ -114,7 +103,6 @@ class listener implements EventSubscriberInterface
 				
 				$this->ip_ban_sync->sync();
 				
-				// Désactiver le flag de première activation
 				if ($first_activation)
 				{
 					$this->config->set('ac_first_activation', 0);
@@ -122,15 +110,12 @@ class listener implements EventSubscriberInterface
 			}
 			catch (\Exception $e)
 			{
-				// Ignorer les erreurs silencieusement pour ne pas casser l'affichage
-				// Les erreurs sont déjà loggées dans le service
 			}
 		}
 	}
 
     public function process_post_content($event)
     {
-        // Ne pas appliquer aux modérateurs et administrateurs
         if ($this->auth->acl_gets('m_', 'a_')) {
             return;
         }
@@ -138,17 +123,14 @@ class listener implements EventSubscriberInterface
         $min_posts = (int) $this->config['min_posts_for_links'];
         $user_posts = (int) $this->user->data['user_posts'];
 
-        // Si l'utilisateur n'a pas atteint le minimum de messages requis
         if ($user_posts < $min_posts) {
             $post_data = $event->get_data();
             $message = $post_data['message'];
             
-            // Vérifier si le message contient des liens
             if ($this->contains_links($message)) {
                 $cleaned_message = $this->remove_links($message, 'post');
                 $post_data['message'] = $cleaned_message;
                 
-                // Signaler l'IP de l'utilisateur au serveur central
                 $user_ip = $this->user->ip;
                 $this->ip_reporter->report_ip($user_ip, 'Attempted to post links with insufficient post count', [
                     'user_id' => $this->user->data['user_id'],
@@ -158,7 +140,6 @@ class listener implements EventSubscriberInterface
                     'subject' => $post_data['subject']
                 ]);
                 
-                // Enregistrer l'action
                 $this->log_action('post_links_removed', [
                     'subject' => $post_data['subject'],
                     'original_message' => $message,
@@ -166,7 +147,6 @@ class listener implements EventSubscriberInterface
                     'ip_reported' => true
                 ]);
 
-                // Si la quarantaine est activée, mettre le post en attente de modération
                 if ($this->config['ac_quarantine_posts']) {
                     $post_data['post_approval'] = 1;
                     $this->log_action('post_quarantined', [
@@ -180,28 +160,18 @@ class listener implements EventSubscriberInterface
         }
     }
 
-    /**
-     * Charge la feuille de style pour l'ACP
-     */
     public function load_acp_stylesheet($event)
     {
         $this->template->link_stylesheet('@linkguarder_activitycontrol/acp.css');
     }
 
-    /**
-     * Charge la feuille de style pour le MCP
-     */
     public function load_mcp_stylesheet($event)
     {
         $this->template->link_stylesheet('@linkguarder_activitycontrol/mcp.css');
     }
     
-    /**
-     * Traite le contenu de la signature et du profil
-     */
     public function process_profile_and_signature($event)
     {
-        // Ne pas appliquer aux modérateurs et administrateurs
         if ($this->auth->acl_gets('m_', 'a_')) {
             return;
         }
@@ -211,7 +181,6 @@ class listener implements EventSubscriberInterface
         $changes_made = false;
         $should_report_ip = false;
 
-        // Traitement de la signature
         $min_posts_sig = (int) $this->config['ac_remove_sig_links_posts'];
         if ($min_posts_sig > 0 && $user_posts < $min_posts_sig && isset($sql_ary['user_sig'])) {
             if ($this->contains_links($sql_ary['user_sig'])) {
@@ -226,12 +195,11 @@ class listener implements EventSubscriberInterface
             }
         }
 
-        // Traitement du site web
         $min_posts_profile = (int) $this->config['ac_remove_profile_links_posts'];
         if ($min_posts_profile > 0 && $user_posts < $min_posts_profile && isset($sql_ary['user_website'])) {
             if ($this->contains_links($sql_ary['user_website'])) {
                 $original_website = $sql_ary['user_website'];
-                $sql_ary['user_website'] = ''; // Vider complètement le champ site web
+                $sql_ary['user_website'] = '';
                 $this->log_action('website_link_removed', [
                     'original_website' => $original_website,
                     'reason' => 'User below minimum post count for profile links'
@@ -241,7 +209,6 @@ class listener implements EventSubscriberInterface
             }
         }
 
-        // Traitement d'autres champs de profil qui pourraient contenir des liens
         $profile_fields = ['user_occ', 'user_from', 'user_interests'];
         foreach ($profile_fields as $field) {
             if (isset($sql_ary[$field]) && $this->contains_links($sql_ary[$field])) {
@@ -257,7 +224,6 @@ class listener implements EventSubscriberInterface
             }
         }
 
-        // Signaler l'IP si des liens ont été supprimés
         if ($should_report_ip) {
             $user_ip = $this->user->ip;
             $this->ip_reporter->report_ip($user_ip, 'Attempted to add links in profile/signature with insufficient post count', [
@@ -275,17 +241,11 @@ class listener implements EventSubscriberInterface
 
     public function inject_menu_logo_js($event)
     {
-        // Ne s'exécute que dans l'ACP ou le MCP
         if (!$this->user->page['is_acp'] && !$this->user->page['is_mcp']) {
             return;
         }
-        
-        // Fonction désactivée - le logo sera ajouté par d'autres moyens si nécessaire
     }
 
-    /**
-     * Place un nouvel utilisateur dans le groupe restreint
-     */
     public function set_initial_group($event)
     {
         $user_id = $event->get_user_id();
@@ -294,46 +254,34 @@ class listener implements EventSubscriberInterface
         $this->log_action('user_added_to_restricted_group', ['user_id' => $user_id]);
     }
 
-    /**
-     * Met à jour le statut du groupe de l'utilisateur
-     */
     public function update_user_group_status($event)
     {
         $user_id = $event->get_data()['poster_id'];
-        $user_posts = (int) $this->user->data['user_posts'] + 1; // +1 car le post vient d'être validé
+        $user_posts = (int) $this->user->data['user_posts'] + 1;
         
         $this->ensure_groups_exist();
         $this->update_user_group_based_on_posts($user_id, $user_posts);
     }
 
-    /**
-     * Met à jour le groupe d'un utilisateur en fonction de son nombre de posts
-     */
     private function update_user_group_based_on_posts($user_id, $user_posts)
     {
         $min_posts = (int) $this->config['min_posts_for_links'];
         $min_sig_posts = (int) $this->config['ac_remove_sig_links_posts'];
         $min_profile_posts = (int) $this->config['ac_remove_profile_links_posts'];
         
-        // Déterminer le groupe approprié
         if ($user_posts >= $min_posts && $user_posts >= $min_sig_posts && $user_posts >= $min_profile_posts) {
-            // Utilisateur complètement vérifié
             $new_group = 'AC - Utilisateurs vérifiés';
         } elseif ($user_posts >= $min_posts) {
-            // Utilisateur peut poster des liens mais pas dans signature/profil
             $new_group = 'AC - Utilisateurs partiellement vérifiés';
         } else {
-            // Utilisateur restreint
             $new_group = 'AC - Utilisateurs restreints';
         }
         
-        // Supprimer de tous les groupes AC
         $ac_groups = ['AC - Utilisateurs restreints', 'AC - Utilisateurs partiellement vérifiés', 'AC - Utilisateurs vérifiés'];
         foreach ($ac_groups as $group_name) {
             $this->remove_user_from_group_by_name($user_id, $group_name);
         }
         
-        // Ajouter au nouveau groupe
         $this->add_user_to_group_by_name($user_id, $new_group);
         
         $this->log_action('user_group_updated', [
@@ -344,9 +292,6 @@ class listener implements EventSubscriberInterface
         ]);
     }
 
-    /**
-     * S'assure que tous les groupes nécessaires existent
-     */
     private function ensure_groups_exist()
     {
         $groups_to_create = [
@@ -372,15 +317,13 @@ class listener implements EventSubscriberInterface
 
         foreach ($groups_to_create as $group_name => $group_data) {
             try {
-                // Vérifier si le groupe existe
                 $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
                 $result = $this->db->sql_query($sql);
                 $group_id = $this->db->sql_fetchfield('group_id');
                 $this->db->sql_freeresult($result);
 
                 if (!$group_id) {
-                    // Créer le groupe avec les champs obligatoires
-                    $group_data['group_legend'] = 0; // Champ entier pour la légende
+                    $group_data['group_legend'] = 0;
                     $group_data['group_rank'] = 0;
                     $group_data['group_display'] = 1;
                     $group_data['group_receive_pm'] = 1;
@@ -402,7 +345,6 @@ class listener implements EventSubscriberInterface
                     $this->log_action('group_created', ['group_name' => $group_name]);
                 }
             } catch (\Exception $e) {
-                // En cas d'erreur, continuer avec les autres groupes
                 $this->log_action('group_creation_failed', [
                     'group_name' => $group_name,
                     'error' => $e->getMessage()
@@ -411,12 +353,8 @@ class listener implements EventSubscriberInterface
         }
     }
 
-    /**
-     * Traite les liens dans les messages (commentaires, réponses, etc.)
-     */
     public function process_message_links($event)
     {
-        // Ne pas appliquer aux modérateurs et administrateurs
         if ($this->auth->acl_gets('m_', 'a_')) {
             return;
         }
@@ -442,56 +380,41 @@ class listener implements EventSubscriberInterface
 
     public function add_footer_logo($event)
     {
-		// Plus de code de démo, cette fonction peut être supprimée dans une prochaine version
     }
 
-    /**
-     * Ajoute un utilisateur à un groupe par nom
-     */
     private function add_user_to_group_by_name($user_id, $group_name)
     {
-        // Récupérer l'ID du groupe
         $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
         $result = $this->db->sql_query($sql);
         $group_id = $this->db->sql_fetchfield('group_id');
         $this->db->sql_freeresult($result);
 
         if ($group_id) {
-            // Vérifier si l'utilisateur n'est pas déjà dans ce groupe
             $sql = 'SELECT user_id FROM ' . USER_GROUP_TABLE . ' WHERE user_id = ' . (int) $user_id . ' AND group_id = ' . (int) $group_id;
             $result = $this->db->sql_query($sql);
             $exists = $this->db->sql_fetchfield('user_id');
             $this->db->sql_freeresult($result);
 
             if (!$exists) {
-                // Ajouter l'utilisateur au groupe
                 $sql = 'INSERT INTO ' . USER_GROUP_TABLE . ' (user_id, group_id, user_pending) VALUES (' . (int) $user_id . ', ' . (int) $group_id . ', 0)';
                 $this->db->sql_query($sql);
             }
         }
     }
 
-    /**
-     * Supprime un utilisateur d'un groupe par nom
-     */
     private function remove_user_from_group_by_name($user_id, $group_name)
     {
-        // Récupérer l'ID du groupe
         $sql = 'SELECT group_id FROM ' . GROUPS_TABLE . ' WHERE group_name = \'' . $this->db->sql_escape($group_name) . '\'';
         $result = $this->db->sql_query($sql);
         $group_id = $this->db->sql_fetchfield('group_id');
         $this->db->sql_freeresult($result);
 
         if ($group_id) {
-            // Supprimer l'utilisateur du groupe
             $sql = 'DELETE FROM ' . USER_GROUP_TABLE . ' WHERE user_id = ' . (int) $user_id . ' AND group_id = ' . (int) $group_id;
             $this->db->sql_query($sql);
         }
     }
     
-    /**
-     * Vérifie si un texte contient des liens
-     */
     private function contains_links($text)
     {
         $link_patterns = [
@@ -511,22 +434,13 @@ class listener implements EventSubscriberInterface
         return false;
     }
 
-    /**
-     * Fonction générique pour supprimer les liens d'un texte
-     */
     private function remove_links($text, $type = 'generic')
     {
-        // Patterns pour détecter différents types de liens
         $link_patterns = [
-            // URLs complètes avec http/https
             '/(https?:\/\/[^\s<>"\'\[\]]+)/i',
-            // URLs avec www.
             '/(www\.[^\s<>"\'\[\]]+\.[a-z]{2,})/i',
-            // Liens BBCode [url]
             '/\[url[=]?([^\]]*)\]([^\[]+)\[\/url\]/i',
-            // Liens BBCode [url=...]...[/url]
             '/\[url=([^\]]+)\]([^\[]+)\[\/url\]/i',
-            // Domaines simples (ex: google.com)
             '/([a-z0-9-]+\.([a-z]{2,}\.)*[a-z]{2,})/i'
         ];
         
@@ -543,9 +457,6 @@ class listener implements EventSubscriberInterface
         return $cleaned_text;
     }
 
-    /**
-     * Fonction privée pour enregistrer les actions
-     */
     private function log_action($action, $data = [])
     {
         global $table_prefix;
