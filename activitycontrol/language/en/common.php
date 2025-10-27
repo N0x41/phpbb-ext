@@ -17,7 +17,6 @@ if (empty($lang) || !is_array($lang))
 }
 
 $lang = array_merge($lang, [
-	'DEMO_PAGE'			=> 'Demo',
     'ACP_ACTIVITY_CONTROL'                  => 'Activity Control',
     'ACP_ACTIVITY_CONTROL_SETTINGS'         => 'Settings',
     'ACP_ACTIVITY_CONTROL_SETTING_SAVED'    => 'Settings have been saved successfully!',
