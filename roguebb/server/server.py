@@ -103,12 +103,16 @@ def load_nodes():
         return False
 
 # --- Fonctions de signature RSA ---
-def create_signed_token(server_id='roguebb-main'):
-    """Crée un token signé avec timestamp"""
+def create_signed_token(server_id='roguebb-main', include_version=False):
+    """Crée un token signé avec timestamp et optionnellement le hash de version"""
     token_data = {
         'timestamp': int(time.time()),
         'server_id': server_id
     }
+    
+    if include_version and list_version_hash:
+        token_data['version_hash'] = list_version_hash
+    
     token_json = json.dumps(token_data, separators=(',', ':'))
     
     if not PRIVATE_KEY:
@@ -135,8 +139,8 @@ def notify_node(node_url, filename, content):
         content: Contenu du fichier (string)
     """
     try:
-        # Créer le token signé
-        token, signature = create_signed_token()
+        # Créer le token signé avec le hash de version
+        token, signature = create_signed_token(include_version=True)
         
         # Préparer la requête
         endpoint = f'{node_url.rstrip("/")}/app.php/notify'
