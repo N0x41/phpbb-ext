@@ -63,7 +63,7 @@ class main
 	 * Endpoint pour recevoir les notifications du serveur RogueBB
 	 * Appelé automatiquement quand la liste d'IPs est mise à jour
 	 * 
-	 * @return void
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse
 	 */
 	public function webhook_notification()
 	{
@@ -71,7 +71,7 @@ class main
 		if ($this->request->server('REQUEST_METHOD') !== 'POST')
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'Only POST requests are allowed'
 			]);
@@ -84,7 +84,7 @@ class main
 		if (!$data || !isset($data['event']))
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'Invalid JSON data'
 			]);
@@ -94,7 +94,7 @@ class main
 		if ($data['event'] !== 'ip_list_updated')
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'Unknown event type'
 			]);
@@ -116,7 +116,7 @@ class main
 		if (!$this->config['ac_enable_ip_sync'])
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'ok',
 				'message' => 'Notification received but auto-sync is disabled',
 				'synced' => false
@@ -129,7 +129,7 @@ class main
 		if ($sync_result['success'])
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'ok',
 				'message' => 'IP list synchronized successfully',
 				'synced' => true,
@@ -143,7 +143,7 @@ class main
 		else
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'Synchronization failed: ' . $sync_result['message'],
 				'synced' => false
@@ -155,7 +155,7 @@ class main
 	 * Endpoint pour recevoir des requêtes du serveur RogueBB
 	 * Permet au serveur d'interroger le nœud pour obtenir des informations
 	 * 
-	 * @return void
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse
 	 */
 	public function node_query()
 	{
@@ -163,7 +163,7 @@ class main
 		if ($this->request->server('REQUEST_METHOD') !== 'POST')
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'Only POST requests are allowed'
 			]);
@@ -176,7 +176,7 @@ class main
 		if (!$data || !isset($data['query']))
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'Invalid JSON data or missing query parameter'
 			]);
@@ -188,28 +188,28 @@ class main
 		switch ($query_type)
 		{
 			case 'status':
-				$this->handle_status_query();
+				return $this->handle_status_query();
 				break;
 
 			case 'stats':
-				$this->handle_stats_query();
+				return $this->handle_stats_query();
 				break;
 
 			case 'sync_now':
-				$this->handle_sync_now_query();
+				return $this->handle_sync_now_query();
 				break;
 
 			case 'local_ips':
-				$this->handle_local_ips_query();
+				return $this->handle_local_ips_query();
 				break;
 
 			case 'reported_ips':
-				$this->handle_reported_ips_query();
+				return $this->handle_reported_ips_query();
 				break;
 
 			default:
 				$json_response = new \phpbb\json_response();
-				$json_response->send([
+				return $json_response->send([
 					'status' => 'error',
 					'message' => 'Unknown query type: ' . $query_type
 				]);
@@ -224,7 +224,7 @@ class main
 	protected function handle_status_query()
 	{
 		$json_response = new \phpbb\json_response();
-		$json_response->send([
+		return $json_response->send([
 			'status' => 'ok',
 			'node_type' => 'phpbb_forum',
 			'extension_version' => '1.0.0',
@@ -241,7 +241,7 @@ class main
 	/**
 	 * Gère la requête de statistiques
 	 * 
-	 * @return void
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse
 	 */
 	protected function handle_stats_query()
 	{
@@ -262,7 +262,7 @@ class main
 		$total_topics = (int)$this->config['num_topics'];
 
 		$json_response = new \phpbb\json_response();
-		$json_response->send([
+		return $json_response->send([
 			'status' => 'ok',
 			'stats' => [
 				'banned_ips' => $total_banned_ips,
@@ -279,14 +279,14 @@ class main
 	/**
 	 * Gère la requête de synchronisation immédiate
 	 * 
-	 * @return void
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse
 	 */
 	protected function handle_sync_now_query()
 	{
 		if (!$this->config['ac_enable_ip_sync'])
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'IP synchronization is disabled on this node'
 			]);
@@ -303,7 +303,7 @@ class main
 			]);
 
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'ok',
 				'message' => 'Synchronization completed',
 				'stats' => [
@@ -317,7 +317,7 @@ class main
 		else
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'error',
 				'message' => 'Synchronization failed: ' . $sync_result['message']
 			]);
@@ -327,7 +327,7 @@ class main
 	/**
 	 * Gère la requête des IPs locales bannies
 	 * 
-	 * @return void
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse
 	 */
 	protected function handle_local_ips_query()
 	{
@@ -342,7 +342,7 @@ class main
 		$this->db->sql_freeresult($result);
 
 		$json_response = new \phpbb\json_response();
-		$json_response->send([
+		return $json_response->send([
 			'status' => 'ok',
 			'ips' => $ips,
 			'count' => count($ips),
@@ -354,7 +354,7 @@ class main
 	/**
 	 * Gère la requête des IPs signalées par ce nœud
 	 * 
-	 * @return void
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse
 	 */
 	protected function handle_reported_ips_query()
 	{
@@ -364,7 +364,7 @@ class main
 		if (!file_exists($reported_file))
 		{
 			$json_response = new \phpbb\json_response();
-			$json_response->send([
+			return $json_response->send([
 				'status' => 'ok',
 				'ips' => [],
 				'count' => 0,
@@ -389,7 +389,7 @@ class main
 		}
 
 		$json_response = new \phpbb\json_response();
-		$json_response->send([
+		return $json_response->send([
 			'status' => 'ok',
 			'ips' => $ips_list,
 			'count' => count($ips_list),
