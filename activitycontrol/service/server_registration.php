@@ -72,14 +72,12 @@ class server_registration
 					// Enregistrement réussi
 					$this->log_event('info', 'Registered to RogueBB server successfully', [
 						'server_url' => $this->server_url,
-						'total_nodes' => $result['total_nodes'] ?? 0,
-						'total_ips' => $result['total_ips'] ?? 0,
-						'version_hash' => $result['version_hash'] ?? 'N/A'
+						'message' => $result['message'] ?? 'Registered'
 					]);
 
 					return [
 						'success' => true,
-						'message' => 'Successfully registered to RogueBB server',
+						'message' => $result['message'] ?? 'Successfully registered to RogueBB server',
 						'data' => $result
 					];
 				}
