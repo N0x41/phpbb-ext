@@ -2,6 +2,19 @@
 data/private_key.pem
 data/reported_ips.json
 *.pem
+roguebb/server/private_key.pem
+roguebb/server/public_key.pem
+roguebb/server/server.log
+
+# Fichiers Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
 
 # Fichiers PHP temporaires
 *.log
