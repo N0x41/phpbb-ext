@@ -163,11 +163,6 @@ class listener implements EventSubscriberInterface
     {
         $this->template->link_stylesheet('@linkguarder_activitycontrol/acp.css');
     }
-
-    public function load_mcp_stylesheet($event)
-    {
-        $this->template->link_stylesheet('@linkguarder_activitycontrol/mcp.css');
-    }
     
     public function process_profile_and_signature($event)
     {

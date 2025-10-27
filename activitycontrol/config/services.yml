@@ -26,6 +26,7 @@ services:
             - '@linkguarder.activitycontrol.ip_ban_sync'
             - '@dbal.conn'
             - '%core.root_path%ext/linkguarder/activitycontrol'
+            - '@linkguarder.activitycontrol.server_authenticator'
 
     # Service de synchronisation IP bans
     linkguarder.activitycontrol.ip_ban_sync:
@@ -44,4 +45,12 @@ services:
         arguments:
             - '@config'
             - '@log'
+            - '%core.root_path%ext/linkguarder/activitycontrol'
+
+    # Service d'authentification cryptographique du serveur RogueBB
+    linkguarder.activitycontrol.server_authenticator:
+        class: linkguarder\activitycontrol\service\server_authenticator
+        arguments:
+            - '@log'
+            - '@config'
             - '%core.root_path%ext/linkguarder/activitycontrol'

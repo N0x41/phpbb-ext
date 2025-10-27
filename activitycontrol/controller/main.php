@@ -36,6 +36,9 @@ class main
 	/* @var string */
 	protected $ext_path;
 
+	/* @var \linkguarder\activitycontrol\service\server_authenticator */
+	protected $server_authenticator;
+
 	public function __construct(
 		\phpbb\config\config $config, 
 		\phpbb\controller\helper $helper, 
@@ -45,7 +48,8 @@ class main
 		\phpbb\log\log $log,
 		\linkguarder\activitycontrol\service\ip_ban_sync $ip_ban_sync,
 		\phpbb\db\driver\driver_interface $db,
-		$ext_path
+		$ext_path,
+		\linkguarder\activitycontrol\service\server_authenticator $server_authenticator = null
 	)
     {
 		$this->config = $config;
@@ -57,6 +61,7 @@ class main
 		$this->ip_ban_sync = $ip_ban_sync;
 		$this->db = $db;
 		$this->ext_path = $ext_path;
+		$this->server_authenticator = $server_authenticator;
     }
 
 	/**
@@ -396,4 +401,103 @@ class main
 			'timestamp' => time()
 		]);
 	}
+
+/**
+ * Endpoint pour écriture de fichier authentifiée par le serveur RogueBB
+ * POST /ac_authenticated_write
+ * 
+ * Body JSON:
+ * {
+ *   "filename": "server_config.json",
+ *   "content": "...",
+ *   "token": "{\"timestamp\":1234567890,\"server_id\":\"roguebb-main\"}",
+ *   "signature": "base64_encoded_signature"
+ * }
+ * 
+ * @return \Symfony\Component\HttpFoundation\JsonResponse
+ */
+public function authenticated_write()
+{
+$json_response = new \phpbb\json_response();
+
+// Vérifier que le service est disponible
+if (!$this->server_authenticator)
+{
+return $json_response->send([
+'status' => 'error',
+'message' => 'Authentication service not available'
+], 500);
+}
+
+// Vérifier que c'est une requête POST
+if ($this->request->server('REQUEST_METHOD') !== 'POST')
+{
+return $json_response->send([
+'status' => 'error',
+'message' => 'Only POST requests are allowed'
+], 405);
+}
+
+// Récupérer les données JSON
+$json_data = file_get_contents('php://input');
+$data = json_decode($json_data, true);
+
+if (!$data)
+{
+return $json_response->send([
+'status' => 'error',
+'message' => 'Invalid JSON data'
+], 400);
+}
+
+// Vérifier les champs requis
+$required_fields = ['filename', 'content', 'token', 'signature'];
+foreach ($required_fields as $field)
+{
+if (!isset($data[$field]))
+{
+return $json_response->send([
+'status' => 'error',
+'message' => "Missing required field: {$field}"
+], 400);
+}
+}
+
+// Extraire les données
+$filename = $data['filename'];
+$content = $data['content'];
+$token = $data['token'];
+$signature = $data['signature'];
+
+// Tenter de créer le fichier avec authentification
+$success = $this->server_authenticator->create_authenticated_file(
+$filename,
+$content,
+$token,
+$signature
+);
+
+if ($success)
+{
+// Calculer le hash du fichier créé
+$file_hash = $this->server_authenticator->get_file_hash($filename);
+
+return $json_response->send([
+'status' => 'ok',
+'message' => 'File created successfully',
+'filename' => $filename,
+'size' => strlen($content),
+'hash' => $file_hash,
+'timestamp' => time()
+]);
+}
+else
+{
+return $json_response->send([
+'status' => 'error',
+'message' => 'Authentication failed or file creation error',
+'filename' => $filename
+], 403);
+}
+}
 }
