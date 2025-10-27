@@ -106,25 +106,16 @@ class server_authenticator
         $token_time = (int) $token_data['timestamp'];
         
         if ($token_time > $current_time) {
-                'token_time' => $token_time,
-                'current_time' => $current_time
-            ]);
             return false;
         }
 
         if (($current_time - $token_time) > $max_age) {
-                'age' => $current_time - $token_time,
-                'max_age' => $max_age
-            ]);
             return false;
         }
 
         // Vérifier l'ID du serveur (optionnel mais recommandé)
         $expected_server_id = $this->config['ac_roguebb_server_id'] ?? null;
         if ($expected_server_id && $token_data['server_id'] !== $expected_server_id) {
-                'expected' => $expected_server_id,
-                'received' => $token_data['server_id']
-            ]);
             return false;
         }
 
@@ -145,15 +136,11 @@ class server_authenticator
     {
         // Vérifier l'authentification
         if (!$this->verify_token($token, $signature)) {
-                'filename' => $filename
-            ]);
             return false;
         }
 
         // Valider le nom du fichier (sécurité)
         if (!$this->is_safe_filename($filename)) {
-                'filename' => $filename
-            ]);
             return false;
         }
 
@@ -163,8 +150,6 @@ class server_authenticator
 
         // Vérifier que le fichier n'existe pas déjà (optionnel)
         if (file_exists($file_path) && !$this->config['ac_allow_file_overwrite']) {
-                'filename' => $filename
-            ]);
             return false;
         }
 
@@ -173,21 +158,13 @@ class server_authenticator
             $bytes_written = file_put_contents($file_path, $content, LOCK_EX);
             
             if ($bytes_written === false) {
-                    'filename' => $filename
-                ]);
                 return false;
             }
 
             // Enregistrer l'événement
-                'filename' => $filename,
-                'size' => $bytes_written
-            ]);
 
             return true;
         } catch (\Exception $e) {
-                'filename' => $filename,
-                'error' => $e->getMessage()
-            ]);
             return false;
         }
     }
