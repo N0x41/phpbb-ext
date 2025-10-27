@@ -7,6 +7,8 @@
  */
 namespace linkguarder\activitycontrol\controller;
 
+use Symfony\Component\HttpFoundation\JsonResponse;
+
 class main
 {
 	/* @var \phpbb\config\config */
@@ -70,7 +72,7 @@ class main
 		// Vérifier que c'est une requête POST
 		if ($this->request->server('REQUEST_METHOD') !== 'POST')
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'Only POST requests are allowed'
 			], 405);
@@ -82,7 +84,7 @@ class main
 
 		if (!$data || !isset($data['event']))
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'Invalid JSON data'
 			], 400);
@@ -91,7 +93,7 @@ class main
 		// Vérifier le type d'événement
 		if ($data['event'] !== 'ip_list_updated')
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'Unknown event type'
 			], 400);
@@ -112,7 +114,7 @@ class main
 		// Vérifier si la synchronisation automatique est activée
 		if (!$this->config['ac_enable_ip_sync'])
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'ok',
 				'message' => 'Notification received but auto-sync is disabled',
 				'synced' => false
@@ -124,7 +126,7 @@ class main
 
 		if ($sync_result['success'])
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'ok',
 				'message' => 'IP list synchronized successfully',
 				'synced' => true,
@@ -137,7 +139,7 @@ class main
 		}
 		else
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'Synchronization failed: ' . $sync_result['message'],
 				'synced' => false
@@ -156,7 +158,7 @@ class main
 		// Vérifier que c'est une requête POST
 		if ($this->request->server('REQUEST_METHOD') !== 'POST')
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'Only POST requests are allowed'
 			], 405);
@@ -168,7 +170,7 @@ class main
 
 		if (!$data || !isset($data['query']))
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'Invalid JSON data or missing query parameter'
 			], 400);
@@ -195,7 +197,7 @@ class main
 				return $this->handle_reported_ips_query();
 
 			default:
-				return $this->helper->json([
+				return new JsonResponse([
 					'status' => 'error',
 					'message' => 'Unknown query type: ' . $query_type
 				], 400);
@@ -209,7 +211,7 @@ class main
 	 */
 	protected function handle_status_query()
 	{
-		return $this->helper->json([
+		return new JsonResponse([
 			'status' => 'ok',
 			'node_type' => 'phpbb_forum',
 			'extension_version' => '1.0.0',
@@ -246,7 +248,7 @@ class main
 		$total_posts = (int)$this->config['num_posts'];
 		$total_topics = (int)$this->config['num_topics'];
 
-		return $this->helper->json([
+		return new JsonResponse([
 			'status' => 'ok',
 			'stats' => [
 				'banned_ips' => $total_banned_ips,
@@ -269,7 +271,7 @@ class main
 	{
 		if (!$this->config['ac_enable_ip_sync'])
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'IP synchronization is disabled on this node'
 			], 403);
@@ -285,7 +287,7 @@ class main
 				$sync_result['total']
 			]);
 
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'ok',
 				'message' => 'Synchronization completed',
 				'stats' => [
@@ -298,7 +300,7 @@ class main
 		}
 		else
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'error',
 				'message' => 'Synchronization failed: ' . $sync_result['message']
 			], 500);
@@ -322,7 +324,7 @@ class main
 		}
 		$this->db->sql_freeresult($result);
 
-		return $this->helper->json([
+		return new JsonResponse([
 			'status' => 'ok',
 			'ips' => $ips,
 			'count' => count($ips),
@@ -343,7 +345,7 @@ class main
 		
 		if (!file_exists($reported_file))
 		{
-			return $this->helper->json([
+			return new JsonResponse([
 				'status' => 'ok',
 				'ips' => [],
 				'count' => 0,
@@ -367,7 +369,7 @@ class main
 			];
 		}
 
-		return $this->helper->json([
+		return new JsonResponse([
 			'status' => 'ok',
 			'ips' => $ips_list,
 			'count' => count($ips_list),
