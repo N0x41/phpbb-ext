@@ -77,6 +77,16 @@ class main_module
                     trigger_error($user->lang('ACP_ACTIVITY_CONTROL_SETTING_SAVED') . adm_back_link($this->u_action));
                 }
 
+                // Test de connexion au serveur RogueBB
+                $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
+                $connection_test = $ip_ban_sync->test_connection();
+                
+                $status_color = $connection_test['connected'] ? 'green' : 'red';
+                $status_icon = $connection_test['connected'] ? '✓' : '✗';
+                $status_text = $connection_test['connected'] 
+                    ? sprintf('Connected to RogueBB (%dms)', $connection_test['latency'])
+                    : 'Disconnected - ' . $connection_test['message'];
+
                 $template->assign_vars([
                     'U_ACTION'                     => $this->u_action,
                     'MIN_POSTS_FOR_LINKS'          => $config['min_posts_for_links'],
@@ -86,11 +96,15 @@ class main_module
                     
                     'AC_ENABLE_IP_REPORTING'       => $config['ac_enable_ip_reporting'],
                     
-                    // IP sync is always enabled - removed toggle from UI
                     'AC_IP_SYNC_INTERVAL'          => $config['ac_ip_sync_interval'],
                     'AC_BAN_REASON'                => $config['ac_ban_reason'],
                     'AC_LAST_IP_SYNC'              => $config['ac_last_ip_sync'] ? $user->format_date($config['ac_last_ip_sync']) : $user->lang('NEVER'),
                     'AC_IP_LIST_VERSION'           => $config['ac_ip_list_version'],
+                    
+                    'AC_ROGUEBB_STATUS_COLOR'      => $status_color,
+                    'AC_ROGUEBB_STATUS_ICON'       => $status_icon,
+                    'AC_ROGUEBB_STATUS_TEXT'       => $status_text,
+                    'AC_ROGUEBB_SERVER_URL'        => $connection_test['server_url'],
                 ]);
                 break;
             case 'logs':

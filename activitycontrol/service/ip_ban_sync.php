@@ -9,8 +9,6 @@ namespace linkguarder\activitycontrol\service;
 
 class ip_ban_sync
 {
-    const CENTRAL_SERVER_URL = 'http://localhost:5000';
-    
     protected $config;
     protected $db;
     protected $user;
@@ -27,18 +25,15 @@ class ip_ban_sync
         $this->phpbb_root_path = $phpbb_root_path;
         $this->php_ext = $php_ext;
     }
+    
+    protected function get_server_url()
+    {
+        return $this->config['ac_central_server_url'] ?: 'http://localhost:5000';
+    }
 
     public function sync()
     {
-        if (!$this->config['ac_enable_ip_sync'])
-        {
-            return [
-                'success' => false,
-                'message' => 'IP sync is disabled in configuration'
-            ];
-        }
-
-        $remote_data = $this->fetch_remote_ip_list(self::CENTRAL_SERVER_URL);
+        $remote_data = $this->fetch_remote_ip_list($this->get_server_url());
         
         if (!$remote_data['success'])
         {
@@ -233,11 +228,6 @@ class ip_ban_sync
 
     public function should_sync()
     {
-        if (!$this->config['ac_enable_ip_sync'])
-        {
-            return false;
-        }
-
         $last_sync = (int) $this->config['ac_last_ip_sync'];
         $sync_interval = (int) $this->config['ac_ip_sync_interval'];
 
@@ -247,5 +237,42 @@ class ip_ban_sync
         }
 
         return (time() - $last_sync) >= $sync_interval;
+    }
+    
+    public function test_connection()
+    {
+        $server_url = $this->get_server_url();
+        $api_url = rtrim($server_url, '/') . '/api/health';
+
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'timeout' => 3,
+                'header' => "User-Agent: phpBB-ActivityControl/1.0\r\n"
+            ]
+        ]);
+
+        $start_time = microtime(true);
+        $response = @file_get_contents($api_url, false, $context);
+        $latency = round((microtime(true) - $start_time) * 1000);
+
+        if ($response === false)
+        {
+            return [
+                'connected' => false,
+                'message' => 'Cannot reach RogueBB server',
+                'server_url' => $server_url
+            ];
+        }
+
+        $data = json_decode($response, true);
+        
+        return [
+            'connected' => true,
+            'message' => 'Connected to RogueBB',
+            'latency' => $latency,
+            'server_url' => $server_url,
+            'server_data' => $data
+        ];
     }
 }

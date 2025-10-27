@@ -40,7 +40,10 @@
 	<legend>{L_AC_ENABLE_IP_SYNC}</legend>
 	<dl>
 		<dt><label>{L_AC_IP_SYNC_STATUS}</label></dt>
-		<dd><span style="color: green; font-weight: bold;">{L_AC_IP_SYNC_ALWAYS_ACTIVE}</span><br><span>{L_AC_IP_SYNC_ALWAYS_ACTIVE_EXPLAIN}</span></dd>
+		<dd>
+			<span style="color: {AC_ROGUEBB_STATUS_COLOR}; font-weight: bold;">{AC_ROGUEBB_STATUS_ICON} {AC_ROGUEBB_STATUS_TEXT}</span><br>
+			<span style="color: #666; font-size: 0.9em;">Server: {AC_ROGUEBB_SERVER_URL}</span>
+		</dd>
 	</dl>
 	<dl>
 		<dt><label for="ac_ip_sync_interval">{L_AC_IP_SYNC_INTERVAL}</label><br><span>{L_AC_IP_SYNC_INTERVAL_EXPLAIN}</span></dt>

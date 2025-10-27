@@ -35,6 +35,7 @@ NODES_DB_PATH = Path(__file__).parent / 'nodes.json'  # Base de données des nœ
 master_ip_set = set()
 nodes_status = {}  # Statut des nœuds
 list_version_hash = None  # Hash au lieu de version incrémentale
+server_start_time = None  # Timestamp de démarrage du serveur
 data_lock = threading.Lock()
 
 # --- Initialisation Flask ---
@@ -323,6 +324,22 @@ def index():
             node_count=len(nodes_info)
         )
 
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """
+    Endpoint de vérification de santé du serveur
+    Utilisé par les nodes pour tester la connexion
+    """
+    uptime = int(time.time() - server_start_time) if server_start_time else 0
+    
+    return jsonify({
+        'status': 'ok',
+        'version': list_version_hash or 'N/A',
+        'total_ips': len(master_ip_set),
+        'total_nodes': len(NODES),
+        'uptime': uptime
+    })
+
 @app.route('/api/register', methods=['POST'])
 def register_node():
     """
@@ -433,6 +450,8 @@ def status():
 
 # --- Démarrage ---
 if __name__ == '__main__':
+    server_start_time = time.time()
+    
     print("=" * 60)
     print("🛡️  RogueBB Server - Système de gestion d'IPs centralisé")
     print("=" * 60)
