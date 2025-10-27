@@ -372,7 +372,7 @@ def register_node():
     forum_url = data.get('forum_url')
     forum_name = data.get('forum_name', 'Unknown Forum')
     
-    print(f"\n[Register] Nouveau nœud: {forum_name} ({forum_url})")
+    print(f"\n[Register] Nouveau nœud: {forum_name} ({forum_url})", flush=True)
     
     # Vérifier si le nœud existe déjà
     with data_lock:
@@ -385,26 +385,29 @@ def register_node():
                 'enabled': True,
                 'registered_at': time.time()
             })
-            print(f"[Register] ✓ Nœud ajouté. Total: {len(NODES)}")
+            print(f"[Register] ✓ Nœud ajouté. Total: {len(NODES)}", flush=True)
             
             # Sauvegarder la liste des nœuds
             save_nodes()
         else:
-            print(f"[Register] ℹ Nœud déjà enregistré")
+            print(f"[Register] ℹ Nœud déjà enregistré", flush=True)
     
     # Envoyer immédiatement la liste d'IPs au nouveau nœud
     if master_ip_set:
         ips_list = list(master_ip_set)
         content = json.dumps(ips_list, separators=(',', ':'))
         
-        # Envoyer en arrière-plan
-        threading.Thread(
-            target=notify_node,
-            args=(forum_url, 'reported_ips.json', content),
-            daemon=True
-        ).start()
+        print(f"[Register] 📤 Envoi de {len(ips_list)} IPs vers {forum_name}", flush=True)
         
-        print(f"[Register] 📤 Envoi de {len(ips_list)} IPs vers {forum_name}")
+        # Envoyer de manière synchrone pour garantir la livraison lors de l'enregistrement
+        try:
+            success = notify_node(forum_url, 'reported_ips.json', content)
+            if success:
+                print(f"[Register] ✓ IPs envoyées avec succès à {forum_name}", flush=True)
+            else:
+                print(f"[Register] ✗ Échec d'envoi des IPs à {forum_name}", flush=True)
+        except Exception as e:
+            print(f"[Register] ✗ Erreur lors de l'envoi: {e}", flush=True)
     
     return jsonify({
         'status': 'ok',
