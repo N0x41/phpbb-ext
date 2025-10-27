@@ -25,7 +25,7 @@ class server_registration
 	protected $ext_path;
 
 	/** @var string URL du serveur RogueBB */
-	protected $server_url = 'http://localhost:5000';
+	protected $server_url;
 
 	/**
 	 * Constructor
@@ -39,6 +39,9 @@ class server_registration
 		$this->config = $config;
 		$this->user = $user;
 		$this->ext_path = $ext_path;
+		
+		// Récupérer l'URL du serveur depuis la config
+		$this->server_url = $this->config['ac_central_server_url'] ?? 'http://localhost:5000';
 	}
 
 	/**

@@ -1,5 +1,5 @@
 {
-  "last_updated": 1761606732.6653025,
+  "last_updated": 1761609024.880461,
   "nodes": [
     {
       "name": "Test Forum",
@@ -24,6 +24,12 @@
       "url": "http://secure-test.com/forum",
       "enabled": true,
       "registered_at": 1761606732.6652987
+    },
+    {
+      "name": "yourdomain.com",
+      "url": "http://localhost/forum",
+      "enabled": true,
+      "registered_at": 1761609024.880452
     }
   ]
 }

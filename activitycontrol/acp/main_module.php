@@ -77,6 +77,24 @@ class main_module
                     trigger_error($user->lang('ACP_ACTIVITY_CONTROL_SETTING_SAVED') . adm_back_link($this->u_action));
                 }
 
+                // Vérifier si le node n'a jamais été synchronisé et tenter l'enregistrement
+                if ($config['ac_last_ip_sync'] == 0)
+                {
+                    // Tentative d'enregistrement automatique
+                    if ($phpbb_container->has('linkguarder.activitycontrol.server_registration'))
+                    {
+                        try {
+                            $registration_service = $phpbb_container->get('linkguarder.activitycontrol.server_registration');
+                            $result = $registration_service->register_to_server();
+                            
+                            // Si réussi, le serveur enverra les IPs via /notify
+                            // Les configs seront mises à jour automatiquement
+                        } catch (\Exception $e) {
+                            // Erreur silencieuse - ne pas bloquer l'affichage de l'ACP
+                        }
+                    }
+                }
+
                 // Test de connexion au serveur RogueBB
                 $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
                 $connection_test = $ip_ban_sync->test_connection();
