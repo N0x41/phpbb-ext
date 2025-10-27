@@ -340,6 +340,20 @@ def health_check():
         'uptime': uptime
     })
 
+@app.route('/api/get_ips', methods=['GET'])
+def get_ips():
+    """
+    Retourne la liste complète des IPs pour synchronisation manuelle
+    Utilisé par le bouton "Sync Now" dans l'ACP phpBB
+    """
+    with data_lock:
+        return jsonify({
+            'status': 'ok',
+            'ips': list(master_ip_set),
+            'version': list_version_hash or 'N/A',
+            'count': len(master_ip_set)
+        })
+
 @app.route('/api/register', methods=['POST'])
 def register_node():
     """
