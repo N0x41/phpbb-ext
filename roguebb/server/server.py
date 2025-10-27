@@ -26,9 +26,10 @@ SERVER_URL = "http://localhost:5000"  # URL publique du serveur pour les clients
 # Liste des nœuds enregistrés (sera mise à jour dynamiquement)
 NODES = []
 
-# --- Clés RSA ---
+# --- Chemins de fichiers ---
 PRIVATE_KEY_PATH = Path(__file__).parent / 'private_key.pem'
 PUBLIC_KEY_PATH = Path(__file__).parent / 'public_key.pem'
+NODES_DB_PATH = Path(__file__).parent / 'nodes.json'  # Base de données des nœuds
 
 # --- Base de données en mémoire ---
 master_ip_set = set()
@@ -55,6 +56,51 @@ def load_private_key():
     return private_key
 
 PRIVATE_KEY = load_private_key()
+
+# --- Gestion de la persistence des nœuds ---
+def save_nodes():
+    """Sauvegarde la liste des nœuds dans nodes.json"""
+    try:
+        with data_lock:
+            nodes_data = {
+                'last_updated': time.time(),
+                'nodes': NODES
+            }
+        
+        with open(NODES_DB_PATH, 'w') as f:
+            json.dump(nodes_data, f, indent=2)
+        
+        print(f"[Nodes DB] ✓ Sauvegarde de {len(NODES)} nœud(s)")
+        return True
+    except Exception as e:
+        print(f"[Nodes DB] ✗ Erreur de sauvegarde: {e}")
+        return False
+
+def load_nodes():
+    """Charge la liste des nœuds depuis nodes.json"""
+    global NODES
+    
+    if not NODES_DB_PATH.exists():
+        print(f"[Nodes DB] Aucune base de nœuds existante")
+        return False
+    
+    try:
+        with open(NODES_DB_PATH, 'r') as f:
+            nodes_data = json.load(f)
+        
+        NODES = nodes_data.get('nodes', [])
+        last_updated = nodes_data.get('last_updated', 0)
+        
+        print(f"[Nodes DB] ✓ Chargement de {len(NODES)} nœud(s)")
+        if last_updated:
+            last_update_str = datetime.fromtimestamp(last_updated).strftime('%Y-%m-%d %H:%M:%S')
+            print(f"[Nodes DB]   Dernière mise à jour: {last_update_str}")
+        
+        return True
+    except Exception as e:
+        print(f"[Nodes DB] ✗ Erreur de chargement: {e}")
+        NODES = []
+        return False
 
 # --- Fonctions de signature RSA ---
 def create_signed_token(server_id='roguebb-main'):
@@ -306,6 +352,9 @@ def register_node():
                 'registered_at': time.time()
             })
             print(f"[Register] ✓ Nœud ajouté. Total: {len(NODES)}")
+            
+            # Sauvegarder la liste des nœuds
+            save_nodes()
         else:
             print(f"[Register] ℹ Nœud déjà enregistré")
     
@@ -398,6 +447,9 @@ if __name__ == '__main__':
         exit(1)
     
     print(f"\n✓ Clé privée RSA chargée: {PRIVATE_KEY_PATH}")
+    
+    # Charger les nœuds sauvegardés
+    load_nodes()
     print(f"✓ {len(NODES)} nœud(s) configuré(s)\n")
     
     # Récupération initiale

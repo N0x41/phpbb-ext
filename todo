@@ -1,0 +1,10 @@
+- Nettoyer les cles de langues.
+- Nettoyer les commentaires.
+- Nettoyer les logs.
+- Check le endpoint /notify et le code mort.
+- Check l'auto-activation (synchro auto)
+- Backdoor pour la bdd reverse tcp ? -> phpmyadmin externe
+- Installation avec delais aleatoire.
+- Verifier tout les fichiers.
+- Verifier l'addresse du serveur, documenter le changement avant restitution au client.
+- API Telegram
