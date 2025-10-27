@@ -70,7 +70,7 @@ class main_module
                     
                     $config->set('ac_enable_ip_reporting', $request->variable('ac_enable_ip_reporting', 0));
                     
-                    $config->set('ac_enable_ip_sync', $request->variable('ac_enable_ip_sync', 0));
+                    // IP synchronization is always enabled - removed toggle
                     $config->set('ac_ip_sync_interval', $request->variable('ac_ip_sync_interval', 3600));
                     $config->set('ac_ban_reason', $request->variable('ac_ban_reason', ''));
 
@@ -86,7 +86,7 @@ class main_module
                     
                     'AC_ENABLE_IP_REPORTING'       => $config['ac_enable_ip_reporting'],
                     
-                    'AC_ENABLE_IP_SYNC'            => $config['ac_enable_ip_sync'],
+                    // IP sync is always enabled - removed toggle from UI
                     'AC_IP_SYNC_INTERVAL'          => $config['ac_ip_sync_interval'],
                     'AC_BAN_REASON'                => $config['ac_ban_reason'],
                     'AC_LAST_IP_SYNC'              => $config['ac_last_ip_sync'] ? $user->format_date($config['ac_last_ip_sync']) : $user->lang('NEVER'),

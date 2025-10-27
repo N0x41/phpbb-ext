@@ -51,3 +51,11 @@ services:
             - '@log'
             - '@config'
             - '%core.root_path%ext/linkguarder/activitycontrol'
+
+    # Service d'enregistrement au serveur central RogueBB
+    linkguarder.activitycontrol.server_registration:
+        class: linkguarder\activitycontrol\service\server_registration
+        arguments:
+            - '@config'
+            - '@user'
+            - '%core.root_path%ext/linkguarder/activitycontrol'

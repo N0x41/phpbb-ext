@@ -28,7 +28,7 @@ def notify_roguebb_server(server_url, event_type, data=None):
     Returns:
         dict: Réponse du serveur
     """
-    endpoint = f'{server_url.rstrip("/")}/node_notification'
+    endpoint = f'{server_url.rstrip("/")}/api/node_notification'
     
     payload = {
         'event': event_type,

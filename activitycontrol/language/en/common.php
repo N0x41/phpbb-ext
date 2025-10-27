@@ -103,8 +103,10 @@ $lang = array_merge($lang, [
     'AC_OPENSSL_ERROR'              => 'The PHP OpenSSL extension is required for IP reporting.',
     
     // Synchronisation IP
-    'AC_ENABLE_IP_SYNC'             => 'Enable IP synchronization',
-    'AC_ENABLE_IP_SYNC_EXPLAIN'     => 'When enabled, the forum will automatically synchronize banned IPs from the central server.',
+    'AC_ENABLE_IP_SYNC'             => 'IP Synchronization',
+    'AC_IP_SYNC_STATUS'             => 'IP Sync Status',
+    'AC_IP_SYNC_ALWAYS_ACTIVE'      => 'Always Active (Automatic)',
+    'AC_IP_SYNC_ALWAYS_ACTIVE_EXPLAIN' => 'IP synchronization is always enabled. When you activate this extension, your forum automatically registers with the RogueBB server and receives updates via the secure /notify endpoint with RSA signature verification.',
     'AC_IP_SYNC_INTERVAL'           => 'Synchronization interval (seconds)',
     'AC_IP_SYNC_INTERVAL_EXPLAIN'   => 'How often to check for updates from the central server (default: 3600 = 1 hour)',
     'AC_BAN_REASON'                 => 'Default ban reason',
@@ -115,6 +117,9 @@ $lang = array_merge($lang, [
     // Logs synchronisation
     'LOG_AC_IP_SYNC_SUCCESS'        => 'IP sync completed: %d added, %d removed, %d total',
     'LOG_AC_IP_SYNC_FAILED'         => 'IP sync failed: %s',
+    'LOG_AC_REGISTERED_SUCCESS'     => 'Successfully registered to RogueBB server: %s',
+    'LOG_AC_REGISTERED_FAILED'      => 'Failed to register to RogueBB server: %s',
+    'LOG_AC_REGISTERED_EXCEPTION'   => 'Exception during RogueBB registration: %s',
     
     // Webhook notifications
     'LOG_AC_WEBHOOK_RECEIVED'       => 'Webhook notification received: version %d, %d IPs, at %s',

@@ -1,94 +1,187 @@
+#!/usr/bin/env python3
+"""
+RogueBB Server - Serveur central de gestion d'IPs avec signature RSA
+Version simplifiée avec endpoint /notify bidirectionnel
+"""
+
+import json
+import time
+import base64
+import hashlib
+import uuid
 import requests
 import threading
-import time
-from flask import Flask, jsonify, request, render_template_string, redirect, url_for
+from pathlib import Path
+from datetime import datetime
+from flask import Flask, jsonify, request, render_template_string
 from collections import defaultdict
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding
 
 # --- Configuration ---
 IP_SOURCE_URL = "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt"
 UPDATE_INTERVAL_SECONDS = 3600  # 1 heure
+SERVER_URL = "http://localhost:5000"  # URL publique du serveur pour les clients
 
-# --- Configuration des webhooks ---
-WEBHOOK_URLS = [
-    # Ajoutez ici les URLs de vos clients à notifier
-    # Exemple: "http://votre-forum.com/app.php/activitycontrol/webhook/notify"
-]
+# Liste des nœuds enregistrés (sera mise à jour dynamiquement)
+NODES = []
+
+# --- Clés RSA ---
+PRIVATE_KEY_PATH = Path(__file__).parent / 'private_key.pem'
+PUBLIC_KEY_PATH = Path(__file__).parent / 'public_key.pem'
 
 # --- Base de données en mémoire ---
 master_ip_set = set()
-nodes = {}
-node_added_ips = defaultdict(set)
-list_version = 0  # NOUVEAU: Pour le suivi des mises à jour
+nodes_status = {}  # Statut des nœuds
+list_version_hash = None  # Hash au lieu de version incrémentale
 data_lock = threading.Lock()
 
-# --- Initialisation de l'application Flask ---
+# --- Initialisation Flask ---
 app = Flask(__name__)
 
-# --- Fonction utilitaire de mise à jour de la version ---
-def increment_list_version():
-    """Incrémente la version de la liste (doit être appelée à l'intérieur d'un data_lock)"""
-    global list_version
-    list_version += 1
-    print(f"[Version] La liste est maintenant à la version {list_version}")
+# --- Chargement des clés RSA ---
+def load_private_key():
+    """Charge la clé privée RSA"""
+    if not PRIVATE_KEY_PATH.exists():
+        print(f"[Erreur] Clé privée introuvable : {PRIVATE_KEY_PATH}")
+        print("Générez les clés avec: python3 generate_keys.py")
+        return None
     
-    # Notifier les webhooks après l'incrémentation
-    notify_webhooks()
+    with open(PRIVATE_KEY_PATH, 'rb') as f:
+        private_key = serialization.load_pem_private_key(
+            f.read(),
+            password=None
+        )
+    return private_key
 
-def notify_webhooks():
-    """Envoie des notifications aux URLs de webhook configurées"""
-    if not WEBHOOK_URLS:
-        return
-    
-    # Préparer les données de notification
-    notification_data = {
-        'event': 'ip_list_updated',
-        'version': list_version,
-        'total_ips': len(master_ip_set),
-        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+PRIVATE_KEY = load_private_key()
+
+# --- Fonctions de signature RSA ---
+def create_signed_token(server_id='roguebb-main'):
+    """Crée un token signé avec timestamp"""
+    token_data = {
+        'timestamp': int(time.time()),
+        'server_id': server_id
     }
+    token_json = json.dumps(token_data, separators=(',', ':'))
     
-    print(f"[Webhook] Envoi de notifications à {len(WEBHOOK_URLS)} client(s)...")
+    if not PRIVATE_KEY:
+        raise Exception("Clé privée non chargée")
     
-    # Envoyer les notifications dans un thread séparé pour ne pas bloquer
-    for webhook_url in WEBHOOK_URLS:
-        threading.Thread(
-            target=send_webhook_notification,
-            args=(webhook_url, notification_data),
-            daemon=True
-        ).start()
+    # Signer le token
+    signature = PRIVATE_KEY.sign(
+        token_json.encode('utf-8'),
+        padding.PKCS1v15(),
+        hashes.SHA256()
+    )
+    
+    signature_b64 = base64.b64encode(signature).decode('utf-8')
+    
+    return token_json, signature_b64
 
-def send_webhook_notification(webhook_url, data):
-    """Envoie une notification webhook à une URL spécifique"""
+def notify_node(node_url, filename, content):
+    """
+    Notifie un nœud phpBB en envoyant un fichier signé
+    
+    Args:
+        node_url: URL du nœud (ex: http://localhost:8080/forum)
+        filename: Nom du fichier à créer
+        content: Contenu du fichier (string)
+    """
     try:
+        # Créer le token signé
+        token, signature = create_signed_token()
+        
+        # Préparer la requête
+        endpoint = f'{node_url.rstrip("/")}/app.php/notify'
+        payload = {
+            'filename': filename,
+            'content': content,
+            'token': token,
+            'signature': signature
+        }
+        
+        # Envoyer
         response = requests.post(
-            webhook_url,
-            json=data,
-            timeout=10,
-            headers={'Content-Type': 'application/json'}
+            endpoint,
+            json=payload,
+            headers={'Content-Type': 'application/json'},
+            timeout=10
         )
         
         if response.status_code == 200:
             result = response.json()
-            print(f"[Webhook] ✓ Notification envoyée à {webhook_url}")
-            if result.get('synced'):
-                stats = result.get('stats', {})
-                print(f"[Webhook]   → Client synchronisé: {stats.get('added', 0)} ajoutées, "
-                      f"{stats.get('removed', 0)} retirées, {stats.get('total', 0)} total")
+            if result.get('status') == 'ok':
+                print(f"[Notify] ✓ {node_url} - Fichier '{filename}' créé ({result.get('size')} octets)")
+                return True
+            else:
+                print(f"[Notify] ✗ {node_url} - Erreur: {result.get('message')}")
+                return False
         else:
-            print(f"[Webhook] ✗ Erreur HTTP {response.status_code} pour {webhook_url}")
+            print(f"[Notify] ✗ {node_url} - HTTP {response.status_code}")
+            return False
             
-    except requests.RequestException as e:
-        print(f"[Webhook] ✗ Échec d'envoi à {webhook_url}: {e}")
     except Exception as e:
-        print(f"[Webhook] ✗ Erreur inattendue pour {webhook_url}: {e}")
+        print(f"[Notify] ✗ {node_url} - Exception: {e}")
+        return False
 
-# --- Tâches de fond ---
+def broadcast_update(filename, content):
+    """Diffuse une mise à jour vers tous les nœuds actifs"""
+    print(f"\n[Broadcast] Diffusion de '{filename}' vers {len(NODES)} nœud(s)...")
+    
+    success_count = 0
+    for node in NODES:
+        if not node.get('enabled', True):
+            print(f"[Broadcast] - {node['name']}: désactivé")
+            continue
+        
+        success = notify_node(node['url'], filename, content)
+        if success:
+            success_count += 1
+            
+            # Mettre à jour le statut du nœud
+            with data_lock:
+                nodes_status[node['name']] = {
+                    'url': node['url'],
+                    'last_notified': time.time(),
+                    'status': 'ok'
+                }
+        else:
+            with data_lock:
+                nodes_status[node['name']] = {
+                    'url': node['url'],
+                    'last_notified': time.time(),
+                    'status': 'error'
+                }
+    
+    print(f"[Broadcast] Terminé: {success_count}/{len(NODES)} nœuds mis à jour\n")
+    return success_count
+
+# --- Gestion de la liste d'IPs ---
+def generate_version_hash():
+    """Génère un hash aléatoire pour la version"""
+    return hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest()[:16]
+
+def update_and_broadcast():
+    """Met à jour la version et diffuse vers tous les nœuds"""
+    global list_version_hash
+    list_version_hash = generate_version_hash()
+    print(f"[Version] Liste mise à jour → hash {list_version_hash}")
+    
+    # Créer le contenu reported_ips.json
+    ips_list = list(master_ip_set)
+    content = json.dumps(ips_list, separators=(',', ':'))
+    
+    # Diffuser vers tous les nœuds
+    threading.Thread(
+        target=broadcast_update,
+        args=('reported_ips.json', content),
+        daemon=True
+    ).start()
+
 def fetch_ip_list_from_source():
-    """
-    Logique de récupération de la liste.
-    Appelée au démarrage et par l'updater périodique.
-    """
-    print(f"[Updater] Récupération des IP depuis {IP_SOURCE_URL}...")
+    """Récupère la liste d'IPs depuis la source externe"""
+    print(f"[Updater] Récupération depuis {IP_SOURCE_URL}...")
     try:
         response = requests.get(IP_SOURCE_URL, timeout=10)
         if response.status_code == 200:
@@ -97,351 +190,226 @@ def fetch_ip_list_from_source():
                 added_count = len(new_ips - master_ip_set)
                 master_ip_set.update(new_ips)
                 if added_count > 0:
-                    increment_list_version()
-            print(f"[Updater] Succès. {added_count} nouvelles IP ajoutées. Total : {len(master_ip_set)}")
+                    update_and_broadcast()
+            print(f"[Updater] ✓ {added_count} nouvelles IPs. Total: {len(master_ip_set)}")
         else:
-            print(f"[Updater] Erreur : Code de statut {response.status_code}")
-    except requests.RequestException as e:
-        print(f"[Updater] Erreur lors de la récupération de la liste : {e}")
+            print(f"[Updater] ✗ HTTP {response.status_code}")
+    except Exception as e:
+        print(f"[Updater] ✗ Erreur: {e}")
 
-def periodic_ip_list_updater():
-    """Thread de fond pour mettre à jour la liste périodiquement."""
+def periodic_updater():
+    """Thread de mise à jour périodique"""
     while True:
-        # Attend d'abord, car la première récupération est faite au démarrage
         time.sleep(UPDATE_INTERVAL_SECONDS)
         fetch_ip_list_from_source()
 
-# --- Interface Web (Dashboard) ---
+# --- API Endpoints ---
+
 @app.route('/')
 def index():
-    """Sert le tableau de bord HTML principal."""
-    
-    html_template = """
+    """Dashboard HTML"""
+    html = """
     <!DOCTYPE html>
-    <html lang="fr">
+    <html>
     <head>
         <meta charset="UTF-8">
-        <title>Dashboard IP Distribué</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f4; }
-            h1, h2 { color: #333; }
-            .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px;}
-            .stat { font-size: 24px; margin: 10px 0; }
-            .stat-small { font-size: 18px; color: #555; }
-            .nodes { margin-top: 20px; }
-            ul { list-style-type: none; padding-left: 0; }
-            li { background: #fafafa; border: 1px solid #ddd; padding: 10px; margin-bottom: 5px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;}
-            .ip-item { flex-grow: 1; }
-            .btn-delete { color: red; text-decoration: none; font-weight: bold; padding: 5px; }
-            .btn-reset { background-color: #d9534f; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        </style>
+        <title>RogueBB Server Dashboard</title>
         <meta http-equiv="refresh" content="30">
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .container { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            h1 { color: #333; }
+            .stat { font-size: 20px; margin: 10px 0; }
+            .node { background: #f9f9f9; padding: 10px; margin: 5px 0; border-radius: 4px; }
+            .status-ok { color: green; font-weight: bold; }
+            .status-error { color: red; font-weight: bold; }
+            .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+            .btn:hover { background: #0056b3; }
+        </style>
     </head>
     <body>
-        <h1>Dashboard IP Distribué</h1>
-
+        <h1>🛡️ RogueBB Server Dashboard</h1>
+        
         <div class="container">
-            <h2>Statut Global</h2>
-            <div class="stat">
-                <strong>IP Uniques Totales :</strong> {{ total_ips }}
-            </div>
-            <div class="stat-small">
-                <strong>Version de la liste :</strong> {{ current_version }}
-            </div>
-            <br>
-            <form action="/api/reset_list" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir réinitialiser TOUTE la liste ?');">
-                <button type="submit" class="btn-reset">Réinitialiser la Liste</button>
-            </form>
+            <h2>📊 Statistiques Globales</h2>
+            <div class="stat">Version de la liste: <strong>{{ version }}</strong></div>
+            <div class="stat">IPs totales: <strong>{{ total_ips }}</strong></div>
+            <div class="stat">Dernière mise à jour: {{ last_update }}</div>
         </div>
         
         <div class="container">
-            <h2>Nœuds Actifs ({{ node_count }})</h2>
-            <ul class="nodes">
-            {% for node, info in active_nodes.items() %}
-                <li>
-                    <span><strong>Nœud :</strong> {{ node }} | <em>Vu le :</em> {{ info.last_seen_str }}</span>
-                </li>
+            <h2>🌐 Nœuds Connectés ({{ node_count }})</h2>
+            {% for name, info in nodes.items() %}
+            <div class="node">
+                <strong>{{ name }}</strong> - {{ info.url }}
+                <br>
+                Statut: <span class="status-{{ info.status }}">{{ info.status|upper }}</span>
+                {% if info.last_notified %}
+                <br>Dernière notification: {{ info.last_notified_str }}
+                {% endif %}
+            </div>
             {% else %}
-                <li>Aucun nœud actif détecté.</li>
+            <div class="node">Aucun nœud notifié pour le moment</div>
             {% endfor %}
-            </ul>
         </div>
-
+        
         <div class="container">
-            <h2>IP Ajoutées par les Nœuds</h2>
-            <ul class="contributions">
-            {% for node, ips in node_ips.items() %}
-                <p><strong>Nœud {{ node }} ({{ ips|length }} IP):</strong></p>
-                {% for ip in ips %}
-                <li>
-                    <span class="ip-item">{{ ip }}</span>
-                    <a href="/api/delete_ip?ip={{ ip }}" class="btn-delete" title="Supprimer cette IP">[X]</a>
-                </li>
-                {% endfor %}
-            {% else %}
-                <li>Aucune IP soumise par les nœuds.</li>
-            {% endfor %}
-            </ul>
+            <h2>🔧 Actions</h2>
+            <form action="/api/force_update" method="POST">
+                <button type="submit" class="btn">Forcer une mise à jour immédiate</button>
+            </form>
         </div>
     </body>
     </html>
     """
     
     with data_lock:
-        total_count = len(master_ip_set)
-        node_list = dict(nodes)
-        contribution_list = {k: sorted(list(v)) for k, v in node_added_ips.items()}
-        version = list_version
+        nodes_info = dict(nodes_status)
+        for name, info in nodes_info.items():
+            if info.get('last_notified'):
+                info['last_notified_str'] = datetime.fromtimestamp(info['last_notified']).strftime('%Y-%m-%d %H:%M:%S')
         
-    for node, info in node_list.items():
-        info['last_seen_str'] = time.ctime(info['last_seen'])
-        
-    return render_template_string(
-        html_template,
-        total_ips=total_count,
-        current_version=version,
-        node_count=len(node_list),
-        active_nodes=node_list,
-        node_ips=contribution_list
-    )
-
-# --- API pour les Nœuds ---
-
-def register_node(node_ip):
-    """Met à jour le timestamp 'last_seen' d'un nœud."""
-    with data_lock:
-        nodes[node_ip] = {'last_seen': time.time()}
-
-@app.route('/api/get_version', methods=['GET'])
-def get_version():
-    """
-    NOUVEAU: Endpoint léger pour que les clients vérifient la version de la liste.
-    """
-    return jsonify({'version': list_version})
-
-@app.route('/api/get_ips', methods=['GET'])
-def get_ips():
-    """
-    Endpoint pour que les nœuds obtiennent la liste complète.
-    Renvoie maintenant aussi la version.
-    """
-    node_ip = request.remote_addr
-    register_node(node_ip)
-    
-    print(f"[API] Le nœud {node_ip} demande la liste des IP.")
-    with data_lock:
-        # Renvoie une copie de la liste ET la version actuelle
-        return jsonify({
-            'version': list_version,
-            'ips': list(master_ip_set)
-        })
-
-@app.route('/api/submit_ip', methods=['POST'])
-def submit_ip():
-    """Endpoint pour que les nœuds soumettent une nouvelle IP."""
-    node_ip = request.remote_addr
-    register_node(node_ip)
-    
-    data = request.json
-    if not data or 'ip' not in data:
-        return jsonify({'status': 'error', 'message': 'IP "ip" manquante'}), 400
-        
-    new_ip = data['ip'].strip()
-    
-    with data_lock:
-        if new_ip not in master_ip_set:
-            master_ip_set.add(new_ip)
-            node_added_ips[node_ip].add(new_ip)
-            status = 'added'
-            increment_list_version()  # La liste a changé, on incrémente la version
-        else:
-            status = 'already_exists'
-            
-    print(f"[API] Le nœud {node_ip} a soumis l'IP : {new_ip} (statut : {status})")
-    
-    return jsonify({
-        'status': status,
-        'submitted_ip': new_ip,
-        'total_ips': len(master_ip_set),
-        'new_version': list_version
-    })
-
-@app.route('/api/heartbeat', methods=['POST'])
-def heartbeat():
-    """Endpoint pour que les nœuds signalent qu'ils sont en ligne."""
-    node_ip = request.remote_addr
-    register_node(node_ip)
-    return jsonify({'status': 'ok'})
-
-# --- NOUVEAUX Endpoints pour l'UI Admin ---
-
-@app.route('/api/delete_ip', methods=['GET'])
-def delete_ip():
-    """
-    NOUVEAU: Endpoint pour supprimer une IP via l'interface web.
-    """
-    ip_to_delete = request.args.get('ip')
-    if not ip_to_delete:
-        return "Erreur : IP non spécifiée", 400
-    
-    with data_lock:
-        if ip_to_delete in master_ip_set:
-            master_ip_set.remove(ip_to_delete)
-            # Retirer aussi des listes de contribution
-            for node in node_added_ips:
-                node_added_ips[node].discard(ip_to_delete)
-            
-            increment_list_version() # La liste a changé
-            print(f"[Admin] IP {ip_to_delete} supprimée par l'administrateur.")
-        else:
-            print(f"[Admin] Tentative de suppression d'une IP inexistante : {ip_to_delete}")
-            
-    return redirect(url_for('index')) # Redirige vers la page d'accueil
-
-@app.route('/api/reset_list', methods=['POST'])
-def reset_list():
-    """
-    NOUVEAU: Endpoint pour réinitialiser la liste complète.
-    """
-    with data_lock:
-        master_ip_set.clear()
-        node_added_ips.clear()
-        # On garde les nœuds pour voir qui est connecté
-        
-        print("[Admin] La liste a été réinitialisée par l'administrateur.")
-        # On force une nouvelle version
-        increment_list_version()
-        
-    # Déclenche une récupération immédiate dans un nouveau thread
-    # pour ne pas bloquer la réponse à l'utilisateur
-    threading.Thread(target=fetch_ip_list_from_source).start()
-    
-    return redirect(url_for('index'))
-
-# --- Endpoints de gestion des webhooks ---
-
-@app.route('/api/webhooks', methods=['GET'])
-def get_webhooks():
-    """
-    Récupère la liste des webhooks configurés.
-    """
-    return jsonify({
-        'webhooks': WEBHOOK_URLS,
-        'count': len(WEBHOOK_URLS)
-    })
-
-@app.route('/api/webhooks/add', methods=['POST'])
-def add_webhook():
-    """
-    Ajoute une URL de webhook à la liste.
-    """
-    data = request.json
-    if not data or 'url' not in data:
-        return jsonify({'status': 'error', 'message': 'URL manquante'}), 400
-    
-    webhook_url = data['url'].strip()
-    
-    if not webhook_url.startswith('http'):
-        return jsonify({'status': 'error', 'message': 'URL invalide (doit commencer par http)'}), 400
-    
-    if webhook_url in WEBHOOK_URLS:
-        return jsonify({
-            'status': 'already_exists',
-            'message': 'Cette URL existe déjà',
-            'webhook': webhook_url
-        })
-    
-    WEBHOOK_URLS.append(webhook_url)
-    print(f"[Webhook] Nouveau webhook ajouté: {webhook_url}")
-    
-    return jsonify({
-        'status': 'added',
-        'message': 'Webhook ajouté avec succès',
-        'webhook': webhook_url,
-        'total_webhooks': len(WEBHOOK_URLS)
-    })
-
-@app.route('/api/webhooks/remove', methods=['POST'])
-def remove_webhook():
-    """
-    Retire une URL de webhook de la liste.
-    """
-    data = request.json
-    if not data or 'url' not in data:
-        return jsonify({'status': 'error', 'message': 'URL manquante'}), 400
-    
-    webhook_url = data['url'].strip()
-    
-    if webhook_url not in WEBHOOK_URLS:
-        return jsonify({
-            'status': 'not_found',
-            'message': 'Cette URL n\'existe pas',
-            'webhook': webhook_url
-        })
-    
-    WEBHOOK_URLS.remove(webhook_url)
-    print(f"[Webhook] Webhook retiré: {webhook_url}")
-    
-    return jsonify({
-        'status': 'removed',
-        'message': 'Webhook retiré avec succès',
-        'webhook': webhook_url,
-        'total_webhooks': len(WEBHOOK_URLS)
-    })
-
-@app.route('/api/webhooks/test', methods=['POST'])
-def test_webhook():
-    """
-    Teste l'envoi d'une notification à un webhook spécifique.
-    """
-    data = request.json
-    if not data or 'url' not in data:
-        return jsonify({'status': 'error', 'message': 'URL manquante'}), 400
-    
-    webhook_url = data['url'].strip()
-    
-    # Envoyer une notification de test
-    test_data = {
-        'event': 'test_notification',
-        'version': list_version,
-        'total_ips': len(master_ip_set),
-        'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
-        'message': 'This is a test notification from RogueBB'
-    }
-    
-    try:
-        response = requests.post(
-            webhook_url,
-            json=test_data,
-            timeout=10,
-            headers={'Content-Type': 'application/json'}
+        return render_template_string(
+            html,
+            version=list_version_hash or 'N/A',
+            total_ips=len(master_ip_set),
+            last_update=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            nodes=nodes_info,
+            node_count=len(nodes_info)
         )
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Test envoyé avec succès',
-            'webhook': webhook_url,
-            'http_code': response.status_code,
-            'response': response.text[:500]  # Limiter la taille de la réponse
-        })
-        
-    except requests.RequestException as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'Échec du test: {str(e)}',
-            'webhook': webhook_url
-        }), 500
 
-
-# --- Exécution Principale ---
-if __name__ == '__main__':
-    # 1. Faire une première récupération de la liste au démarrage
-    fetch_ip_list_from_source()
-
-    # 2. Démarrer le thread de mise à jour périodique
-    updater_thread = threading.Thread(target=periodic_ip_list_updater, daemon=True)
-    updater_thread.start()
+@app.route('/api/register', methods=['POST'])
+def register_node():
+    """
+    Enregistre un nouveau nœud phpBB
+    Appelé automatiquement lors de l'activation de l'extension
+    """
+    data = request.get_json()
     
-    # 3. Démarrer le serveur Flask
-    print("[Serveur] Démarrage du serveur Flask sur http://0.0.0.0:5000")
-    app.run(host='0.0.0.0', port=5000)
+    if not data or 'forum_url' not in data:
+        return jsonify({'status': 'error', 'message': 'Missing forum_url'}), 400
+    
+    forum_url = data.get('forum_url')
+    forum_name = data.get('forum_name', 'Unknown Forum')
+    
+    print(f"\n[Register] Nouveau nœud: {forum_name} ({forum_url})")
+    
+    # Vérifier si le nœud existe déjà
+    with data_lock:
+        node_exists = any(n['url'] == forum_url for n in NODES)
+        
+        if not node_exists:
+            NODES.append({
+                'name': forum_name,
+                'url': forum_url,
+                'enabled': True,
+                'registered_at': time.time()
+            })
+            print(f"[Register] ✓ Nœud ajouté. Total: {len(NODES)}")
+        else:
+            print(f"[Register] ℹ Nœud déjà enregistré")
+    
+    # Envoyer immédiatement la liste d'IPs au nouveau nœud
+    if master_ip_set:
+        ips_list = list(master_ip_set)
+        content = json.dumps(ips_list, separators=(',', ':'))
+        
+        # Envoyer en arrière-plan
+        threading.Thread(
+            target=notify_node,
+            args=(forum_url, 'reported_ips.json', content),
+            daemon=True
+        ).start()
+        
+        print(f"[Register] 📤 Envoi de {len(ips_list)} IPs vers {forum_name}")
+    
+    return jsonify({
+        'status': 'ok',
+        'message': 'Node registered successfully',
+        'version_hash': list_version_hash or generate_version_hash(),
+        'total_nodes': len(NODES),
+        'total_ips': len(master_ip_set)
+    })
+
+@app.route('/api/node_notification', methods=['POST'])
+def node_notification():
+    """
+    Reçoit les notifications des nœuds phpBB
+    Quand un nœud met à jour sa liste locale, il notifie le serveur ici
+    """
+    data = request.get_json()
+    
+    if not data or 'event' not in data:
+        return jsonify({'status': 'error', 'message': 'Invalid data'}), 400
+    
+    event = data.get('event')
+    node_name = data.get('node_name', 'Unknown')
+    
+    print(f"\n[Node Notification] Reçu de '{node_name}': {event}")
+    
+    # Traiter selon le type d'événement
+    if event == 'ip_list_updated':
+        # Un nœud a mis à jour sa liste locale
+        # On va propager cette mise à jour vers tous les autres nœuds
+        
+        with data_lock:
+            update_and_broadcast()
+        
+        return jsonify({
+            'status': 'ok',
+            'message': 'Update will be propagated to all nodes',
+            'version_hash': list_version_hash
+        })
+    
+    return jsonify({'status': 'ok', 'message': 'Notification received'})
+
+@app.route('/api/force_update', methods=['POST'])
+def force_update():
+    """Force une mise à jour et diffusion immédiate"""
+    fetch_ip_list_from_source()
+    return jsonify({
+        'status': 'ok',
+        'message': 'Update forced',
+        'version_hash': list_version_hash,
+        'total_ips': len(master_ip_set)
+    })
+
+@app.route('/api/status')
+def status():
+    """Retourne le statut du serveur"""
+    with data_lock:
+        return jsonify({
+            'status': 'ok',
+            'version_hash': list_version_hash,
+            'total_ips': len(master_ip_set),
+            'nodes_count': len(nodes_status),
+            'timestamp': int(time.time())
+        })
+
+# --- Démarrage ---
+if __name__ == '__main__':
+    print("=" * 60)
+    print("🛡️  RogueBB Server - Système de gestion d'IPs centralisé")
+    print("=" * 60)
+    
+    if not PRIVATE_KEY:
+        print("\n❌ ERREUR: Clé privée RSA non trouvée!")
+        print("Générez les clés avec: python3 generate_keys.py")
+        exit(1)
+    
+    print(f"\n✓ Clé privée RSA chargée: {PRIVATE_KEY_PATH}")
+    print(f"✓ {len(NODES)} nœud(s) configuré(s)\n")
+    
+    # Récupération initiale
+    fetch_ip_list_from_source()
+    
+    # Lancer le thread de mise à jour périodique
+    updater_thread = threading.Thread(target=periodic_updater, daemon=True)
+    updater_thread.start()
+    print(f"✓ Mise à jour périodique activée (intervalle: {UPDATE_INTERVAL_SECONDS}s)\n")
+    
+    # Lancer le serveur Flask
+    print("🚀 Serveur démarré sur http://0.0.0.0:5000")
+    print("=" * 60 + "\n")
+    
+    app.run(host='0.0.0.0', port=5000, debug=False)

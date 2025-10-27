@@ -51,7 +51,42 @@ class ext extends \phpbb\extension\base
                     $config->set('ac_first_activation', 1);
                 }
                 
-                return 'sync_marked';
+                return 'register_to_server';
+                
+            case 'register_to_server':
+                // Enregistrer automatiquement le forum au serveur RogueBB
+                global $phpbb_container;
+                
+                if ($phpbb_container && $phpbb_container->has('linkguarder.activitycontrol.server_registration'))
+                {
+                    try {
+                        $registration_service = $phpbb_container->get('linkguarder.activitycontrol.server_registration');
+                        $result = $registration_service->register_to_server();
+                        
+                        // Log du résultat (succès ou échec)
+                        if ($result['success']) {
+                            // Enregistrement réussi - le serveur va envoyer les IPs via /notify
+                            if ($phpbb_container->has('log')) {
+                                $log = $phpbb_container->get('log');
+                                $log->add('admin', ANONYMOUS, '', 'LOG_AC_REGISTERED_SUCCESS', time(), [$result['message']]);
+                            }
+                        } else {
+                            // Échec - mais on continue l'activation quand même
+                            if ($phpbb_container->has('log')) {
+                                $log = $phpbb_container->get('log');
+                                $log->add('admin', ANONYMOUS, '', 'LOG_AC_REGISTERED_FAILED', time(), [$result['message']]);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // Erreur silencieuse - ne pas bloquer l'activation
+                        if ($phpbb_container->has('log')) {
+                            $log = $phpbb_container->get('log');
+                            $log->add('admin', ANONYMOUS, '', 'LOG_AC_REGISTERED_EXCEPTION', time(), [$e->getMessage()]);
+                        }
+                    }
+                }
+                
+                return 'completed';
                 
             default:
                 return parent::enable_step($old_state);
