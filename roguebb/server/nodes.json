@@ -1,0 +1,23 @@
+{
+  "last_updated": 1761606691.808539,
+  "nodes": [
+    {
+      "name": "Test Forum",
+      "url": "http://localhost:8080/forum",
+      "enabled": true,
+      "registered_at": 1761606509.6501641
+    },
+    {
+      "name": "Second Forum",
+      "url": "http://example.com/forum",
+      "enabled": true,
+      "registered_at": 1761606565.1528544
+    },
+    {
+      "name": "Test Node",
+      "url": "http://test123.com/forum",
+      "enabled": true,
+      "registered_at": 1761606691.808535
+    }
+  ]
+}

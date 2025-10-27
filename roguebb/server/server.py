@@ -373,10 +373,7 @@ def register_node():
     
     return jsonify({
         'status': 'ok',
-        'message': 'Node registered successfully',
-        'version_hash': list_version_hash or generate_version_hash(),
-        'total_nodes': len(NODES),
-        'total_ips': len(master_ip_set)
+        'message': 'Node registered successfully'
     })
 
 @app.route('/api/node_notification', methods=['POST'])
