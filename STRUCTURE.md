@@ -17,7 +17,6 @@ phpbb-ext/
 │   ├── language/               Fichiers de langue
 │   ├── migrations/             Migrations de base de données
 │   ├── service/                Services (sync/report IP)
-│   ├── styles/                 Templates et assets
 │   ├── composer.json           Métadonnées composer
 │   └── ext.php                 Point d'entrée extension
 │
