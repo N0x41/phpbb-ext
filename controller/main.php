@@ -219,7 +219,7 @@ class main
 	/**
 	 * Gère la requête de statut
 	 * 
-	 * @return void
+	 * @return \Symfony\Component\HttpFoundation\JsonResponse
 	 */
 	protected function handle_status_query()
 	{
