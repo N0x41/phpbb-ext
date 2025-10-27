@@ -135,24 +135,41 @@ $signature
 
 if ($success)
 {
-// Calculer le hash du fichier créé
-$file_hash = $this->server_authenticator->get_file_hash($filename);
+	if ($success)
+	{
+		// Calculer le hash du fichier créé
+		$file_hash = $this->server_authenticator->get_file_hash($filename);
 
-// Logger le succès
-$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'AC_NOTIFY_FILE_RECEIVED', false, [
-'filename' => $filename,
-'size' => strlen($content),
-'hash' => substr($file_hash, 0, 16)
-]);
+		// Logger le succès
+		$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'AC_NOTIFY_FILE_RECEIVED', time(), [
+			$filename,
+			strlen($content),
+			substr($file_hash, 0, 16)
+		]);
 
-return $json_response->send([
-'status' => 'ok',
-'message' => 'Update received and validated',
-'filename' => $filename,
-'size' => strlen($content),
-'hash' => $file_hash,
-'timestamp' => time()
-]);
+		return $json_response->send([
+			'status' => 'ok',
+			'message' => 'Update received and validated',
+			'filename' => $filename,
+			'size' => strlen($content),
+			'hash' => $file_hash,
+			'timestamp' => time()
+		]);
+	}
+	else
+	{
+		// Échec de l'authentification
+		$this->log->add('critical', $this->user->data['user_id'], $this->user->ip, 'AC_NOTIFY_AUTH_FAILED', time(), [
+			$filename,
+			$this->user->ip
+		]);
+
+		return $json_response->send([
+			'status' => 'error',
+			'message' => 'Authentication failed: invalid signature or expired token',
+			'filename' => $filename
+		], 403);
+	}
 }
 else
 {
