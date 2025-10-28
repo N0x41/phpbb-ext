@@ -189,13 +189,16 @@ def broadcast_update(filename, content):
         if success:
             success_count += 1
             
-            # Mettre à jour le statut du nœud
+            # Mettre à jour le statut ET la version du nœud
             with data_lock:
                 nodes_status[node['name']] = {
                     'url': node['url'],
                     'last_notified': time.time(),
                     'status': 'ok'
                 }
+                # Mettre à jour la version IP dans NODES
+                node['ip_version'] = list_version_hash
+                save_nodes()
         else:
             with data_lock:
                 nodes_status[node['name']] = {
@@ -273,8 +276,12 @@ def index():
             .node { background: #f9f9f9; padding: 10px; margin: 5px 0; border-radius: 4px; }
             .status-ok { color: green; font-weight: bold; }
             .status-error { color: red; font-weight: bold; }
+            .status-unknown { color: orange; font-weight: bold; }
+            .status-outdated { color: #ff6600; font-weight: bold; }
             .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
             .btn:hover { background: #0056b3; }
+            .btn-delete { background: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+            .btn-delete:hover { background: #c82333; }
         </style>
     </head>
     <body>
@@ -291,56 +298,171 @@ def index():
             <h2>🌐 Nœuds Connectés ({{ node_count }})</h2>
             {% for name, info in nodes.items() %}
             <div class="node">
-                <strong>{{ name }}</strong> - {{ info.url }}
-                <br>
-                Statut: <span class="status-{{ info.status }}">{{ info.status|upper }}</span>
-                {% if info.last_notified %}
-                <br>Dernière notification: {{ info.last_notified_str }}
-                {% endif %}
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div style="flex: 1;">
+                        <strong>{{ name }}</strong> - {{ info.url }}
+                        <br>
+                        Statut: <span class="status-{{ info.status }}">{{ info.status|upper }}</span>
+                        | Version IP: <strong>{{ info.ip_version }}</strong>
+                        {% if info.last_notified %}
+                        <br>Dernière notification: {{ info.last_notified_str }}
+                        {% endif %}
+                    </div>
+                    <button onclick="deleteNode('{{ name }}')" class="btn-delete" title="Supprimer ce nœud">🗑️</button>
+                </div>
             </div>
             {% else %}
-            <div class="node">Aucun nœud notifié pour le moment</div>
+            <div class="node">Aucun nœud enregistré</div>
             {% endfor %}
         </div>
         
         <div class="container">
             <h2>🔧 Actions</h2>
-            <form action="/api/force_update" method="POST">
-                <button type="submit" class="btn">Forcer une mise à jour immédiate</button>
-            </form>
+            <button onclick="forceUpdate()" class="btn">Forcer une mise à jour immédiate</button>
         </div>
+        
+        <script>
+            function forceUpdate() {
+                const btn = event.target;
+                btn.disabled = true;
+                btn.textContent = 'Mise à jour en cours...';
+                
+                fetch('/api/force_update', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Recharger la page après succès
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        btn.disabled = false;
+                        btn.textContent = 'Forcer une mise à jour immédiate';
+                        alert('Erreur lors de la mise à jour');
+                    });
+            }
+            
+            function deleteNode(nodeName) {
+                if (!confirm('Êtes-vous sûr de vouloir supprimer le nœud "' + nodeName + '" ?')) {
+                    return;
+                }
+                
+                fetch('/api/delete_node', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ node_name: nodeName })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // Recharger la page après suppression
+                        location.reload();
+                    } else {
+                        alert('Erreur: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la suppression du nœud');
+                });
+            }
+        </script>
     </body>
     </html>
     """
     
     with data_lock:
-        nodes_info = dict(nodes_status)
-        for name, info in nodes_info.items():
-            if info.get('last_notified'):
-                info['last_notified_str'] = datetime.fromtimestamp(info['last_notified']).strftime('%Y-%m-%d %H:%M:%S')
+        # Créer une vue combinée : tous les nodes de NODES avec comparaison de version
+        nodes_display = {}
+        for node in NODES:
+            name = node['name']
+            node_version = node.get('ip_version', None)
+            status_info = nodes_status.get(name, {})
+            
+            # Déterminer le statut basé sur la comparaison de version
+            if not node_version:
+                actual_status = 'unknown'
+            elif node_version == list_version_hash:
+                actual_status = 'ok'
+            else:
+                actual_status = 'outdated'
+            
+            nodes_display[name] = {
+                'url': node['url'],
+                'status': actual_status,
+                'ip_version': node_version or 'N/A',
+                'last_notified': status_info.get('last_notified')
+            }
+            
+            if nodes_display[name]['last_notified']:
+                nodes_display[name]['last_notified_str'] = datetime.fromtimestamp(
+                    nodes_display[name]['last_notified']
+                ).strftime('%Y-%m-%d %H:%M:%S')
         
         return render_template_string(
             html,
             version=list_version_hash or 'N/A',
             total_ips=len(master_ip_set),
             last_update=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            nodes=nodes_info,
-            node_count=len(nodes_info)
+            nodes=nodes_display,
+            node_count=len(nodes_display)
         )
 
-@app.route('/api/health', methods=['GET'])
+@app.route('/api/health', methods=['POST'])
 def health_check():
     """
-    Endpoint de vérification de santé du serveur
-    Utilisé par les nodes pour tester la connexion
+    Endpoint de vérification de santé - Les nodes envoient leur version
+    Met à jour le statut et la version du node dans la base
     """
+    data = request.get_json()
+    
+    if not data:
+        return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+    
+    node_url = data.get('node_url')
+    node_name = data.get('node_name', 'Unknown')
+    node_version = data.get('ip_version')
+    
+    if not node_url:
+        return jsonify({'status': 'error', 'message': 'Missing node_url'}), 400
+    
+    print(f"[Health] Check from {node_name} (version: {node_version or 'N/A'})", flush=True)
+    
+    # Mettre à jour le node dans NODES et son statut
+    with data_lock:
+        node_found = False
+        for node in NODES:
+            if node['url'] == node_url:
+                node_found = True
+                # Mettre à jour la version du node
+                node['ip_version'] = node_version
+                
+                # Mettre à jour le statut
+                nodes_status[node['name']] = {
+                    'url': node_url,
+                    'last_notified': time.time(),
+                    'status': 'ok'
+                }
+                break
+        
+        if node_found:
+            save_nodes()
+        else:
+            print(f"[Health] ⚠ Node non enregistré: {node_url}", flush=True)
+    
+    # Comparer la version avec la version master
+    needs_update = False
+    if list_version_hash and node_version != list_version_hash:
+        needs_update = True
+        print(f"[Health] ⚠ {node_name} obsolète (node: {node_version}, master: {list_version_hash})", flush=True)
+    
     uptime = int(time.time() - server_start_time) if server_start_time else 0
     
     return jsonify({
         'status': 'ok',
-        'version': list_version_hash or 'N/A',
+        'server_version': list_version_hash or 'N/A',
+        'node_version': node_version or 'N/A',
+        'update_needed': needs_update,
         'total_ips': len(master_ip_set),
-        'total_nodes': len(NODES),
         'uptime': uptime
     })
 
@@ -448,13 +570,66 @@ def node_notification():
 
 @app.route('/api/force_update', methods=['POST'])
 def force_update():
-    """Force une mise à jour et diffusion immédiate"""
-    fetch_ip_list_from_source()
+    """Force une mise à jour et diffusion immédiate avec nouvelle version"""
+    with data_lock:
+        # Forcer la génération d'une nouvelle version et broadcast
+        update_and_broadcast()
+    
     return jsonify({
         'status': 'ok',
-        'message': 'Update forced',
+        'message': 'Forced update with new version',
         'version_hash': list_version_hash,
         'total_ips': len(master_ip_set)
+    })
+
+@app.route('/api/delete_node', methods=['POST'])
+def delete_node():
+    """Supprime un nœud de la liste après lui avoir envoyé une liste vide"""
+    data = request.get_json()
+    
+    if not data or 'node_name' not in data:
+        return jsonify({'status': 'error', 'message': 'Missing node_name'}), 400
+    
+    node_name = data.get('node_name')
+    
+    with data_lock:
+        # Trouver le nœud
+        node_to_delete = None
+        node_index = None
+        for i, node in enumerate(NODES):
+            if node['name'] == node_name:
+                node_to_delete = node
+                node_index = i
+                break
+        
+        if not node_to_delete:
+            return jsonify({'status': 'error', 'message': 'Node not found'}), 404
+        
+        # Envoyer une liste vide au nœud pour le réinitialiser
+        print(f"[Delete] Envoi d'une liste vide à {node_name} pour réinitialisation...")
+        empty_list = json.dumps([])
+        notify_result = notify_node(node_to_delete['url'], 'reported_ips.json', empty_list)
+        
+        if notify_result:
+            print(f"[Delete] ✓ Liste vide envoyée à {node_name}")
+        else:
+            print(f"[Delete] ⚠ Échec d'envoi de la liste vide à {node_name} (suppression quand même)")
+        
+        # Supprimer le nœud
+        NODES.pop(node_index)
+        print(f"[Delete] ✓ Nœud supprimé: {node_name}")
+        
+        # Supprimer aussi du statut
+        if node_name in nodes_status:
+            del nodes_status[node_name]
+        
+        # Sauvegarder
+        save_nodes()
+    
+    return jsonify({
+        'status': 'ok',
+        'message': f'Node {node_name} deleted and reset successfully',
+        'remaining_nodes': len(NODES)
     })
 
 @app.route('/api/status')
@@ -465,7 +640,6 @@ def status():
             'status': 'ok',
             'version_hash': list_version_hash,
             'total_ips': len(master_ip_set),
-            'nodes_count': len(nodes_status),
             'timestamp': int(time.time())
         })
 

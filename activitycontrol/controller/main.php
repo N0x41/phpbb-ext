@@ -138,6 +138,29 @@ if ($success)
 	// Calculer le hash du fichier créé
 	$file_hash = $this->server_authenticator->get_file_hash($filename);
 	
+	// Vérifier si le contenu est une liste vide (réinitialisation)
+	$content_decoded = json_decode($content, true);
+	$is_empty_list = (is_array($content_decoded) && empty($content_decoded));
+	
+	if ($is_empty_list)
+	{
+		// Réinitialisation : remettre les valeurs à zéro pour permettre le ré-enregistrement
+		$this->config->set('ac_last_ip_sync', 0);
+		$this->config->set('ac_ip_list_version', 0);
+		
+		$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'AC_NOTIFY_RESET', time(), [
+			$filename
+		]);
+		
+		return $json_response->send([
+			'status' => 'ok',
+			'message' => 'Node reset successfully',
+			'filename' => $filename,
+			'reset' => true,
+			'timestamp' => time()
+		]);
+	}
+	
 	// Extraire le version_hash du token si présent
 	$token_data = json_decode($token, true);
 	if (isset($token_data['version_hash']))

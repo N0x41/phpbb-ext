@@ -39,26 +39,8 @@ class ext extends \phpbb\extension\base
     
     public function enable_step($old_state)
     {
-        if ($old_state === false)
-        {
-            // Première étape : enregistrer au serveur RogueBB
-            if ($this->container->has('linkguarder.activitycontrol.server_registration'))
-            {
-                try {
-                    $registration_service = $this->container->get('linkguarder.activitycontrol.server_registration');
-                    $result = $registration_service->register_to_server();
-                    
-                    // Le serveur envoie les IPs via /notify de manière synchrone
-                    // Les configs ac_last_ip_sync et ac_ip_list_version seront mises à jour automatiquement
-                    
-                } catch (\Exception $e) {
-                    // Erreur silencieuse - ne pas bloquer l'activation
-                }
-            }
-            
-            return 'registered';
-        }
-        
+        // L'enregistrement au serveur est géré par l'événement core.extension_enable_after
+        // dans event/listener.php via on_extension_enable()
         return parent::enable_step($old_state);
     }
 }

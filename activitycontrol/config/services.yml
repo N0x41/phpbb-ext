@@ -59,3 +59,4 @@ services:
             - '@config'
             - '@user'
             - '%core.root_path%ext/linkguarder/activitycontrol'
+            - '@dbal.conn'

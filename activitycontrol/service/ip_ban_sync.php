@@ -244,11 +244,20 @@ class ip_ban_sync
         $server_url = $this->get_server_url();
         $api_url = rtrim($server_url, '/') . '/api/health';
 
+        // Préparer les données du node à envoyer
+        $node_data = [
+            'node_url' => $this->get_forum_url(),
+            'node_name' => $this->config['sitename'],
+            'ip_version' => $this->config['ac_ip_list_version'] ?? null
+        ];
+
         $context = stream_context_create([
             'http' => [
-                'method' => 'GET',
+                'method' => 'POST',
                 'timeout' => 3,
-                'header' => "User-Agent: phpBB-ActivityControl/1.0\r\n"
+                'header' => "Content-Type: application/json\r\n" .
+                           "User-Agent: phpBB-ActivityControl/1.0\r\n",
+                'content' => json_encode($node_data)
             ]
         ]);
 
@@ -274,5 +283,27 @@ class ip_ban_sync
             'server_url' => $server_url,
             'server_data' => $data
         ];
+    }
+    
+    /**
+     * Construit l'URL complète du forum
+     * 
+     * @return string URL du forum
+     */
+    protected function get_forum_url()
+    {
+        $protocol = $this->config['server_protocol'];
+        $server = $this->config['server_name'];
+        $port = $this->config['server_port'];
+        $path = $this->config['script_path'];
+
+        $url = $protocol . $server;
+        if ($port && $port != 80 && $port != 443)
+        {
+            $url .= ':' . $port;
+        }
+        $url .= $path;
+
+        return $url;
     }
 }

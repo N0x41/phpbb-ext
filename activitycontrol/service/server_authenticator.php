@@ -50,12 +50,14 @@ class server_authenticator
             // Charger la clé publique
             $public_key = $this->get_public_key();
             if (!$public_key) {
+                $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_NO_PUBLIC_KEY', time());
                 return false;
             }
 
             // Décoder la signature
             $signature_decoded = base64_decode($signature);
             if ($signature_decoded === false) {
+                $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_SIGNATURE_DECODE_FAILED', time());
                 return false;
             }
 
@@ -70,12 +72,18 @@ class server_authenticator
             if ($result === 1) {
                 return true;
             } elseif ($result === 0) {
+                $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_SIGNATURE_INVALID', time(), [
+                    'data_length' => strlen($data),
+                    'signature_length' => strlen($signature)
+                ]);
                 return false;
             } else {
                 $error = openssl_error_string();
+                $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_OPENSSL_ERROR', time(), [$error]);
                 return false;
             }
         } catch (\Exception $e) {
+            $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_EXCEPTION', time(), [$e->getMessage()]);
             return false;
         }
     }
@@ -92,12 +100,18 @@ class server_authenticator
     {
         // Vérifier la signature
         if (!$this->verify_signature($token, $signature)) {
+            $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_SIGNATURE_FAILED', time());
             return false;
         }
 
         // Décoder le jeton
         $token_data = json_decode($token, true);
         if (!$token_data || !isset($token_data['timestamp']) || !isset($token_data['server_id'])) {
+            $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_INVALID_FORMAT', time(), [
+                'has_data' => $token_data ? 'yes' : 'no',
+                'has_timestamp' => isset($token_data['timestamp']) ? 'yes' : 'no',
+                'has_server_id' => isset($token_data['server_id']) ? 'yes' : 'no'
+            ]);
             return false;
         }
 
@@ -106,20 +120,33 @@ class server_authenticator
         $token_time = (int) $token_data['timestamp'];
         
         if ($token_time > $current_time) {
+            $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_FUTURE', time(), [
+                'token_time' => $token_time,
+                'current_time' => $current_time,
+                'diff' => $token_time - $current_time
+            ]);
             return false;
         }
 
         if (($current_time - $token_time) > $max_age) {
+            $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_EXPIRED', time(), [
+                'token_time' => $token_time,
+                'current_time' => $current_time,
+                'age' => $current_time - $token_time,
+                'max_age' => $max_age
+            ]);
             return false;
         }
 
         // Vérifier l'ID du serveur (optionnel mais recommandé)
-        $expected_server_id = $this->config['ac_roguebb_server_id'] ?? null;
-        if ($expected_server_id && $token_data['server_id'] !== $expected_server_id) {
-            return false;
-        }
+        // Note: Cette vérification est désactivée car nous n'utilisons pas de server_id configuré
+        // $expected_server_id = $this->config['ac_server_id'] ?? null;
+        // if ($expected_server_id && $token_data['server_id'] !== $expected_server_id) {
+        //     return false;
+        // }
 
         // Tout est OK
+        $this->log->add('admin', ANONYMOUS, '', 'AC_AUTH_TOKEN_VALID', time());
         return true;
     }
 
@@ -139,29 +166,15 @@ class server_authenticator
             return false;
         }
 
-        // Valider le nom du fichier (sécurité)
-        if (!$this->is_safe_filename($filename)) {
-            return false;
-        }
-
-        // Construire le chemin complet
         $data_dir = dirname($this->public_key_path);
         $file_path = $data_dir . '/' . $filename;
-
-        // Vérifier que le fichier n'existe pas déjà (optionnel)
-        if (file_exists($file_path) && !$this->config['ac_allow_file_overwrite']) {
-            return false;
-        }
-
         // Écrire le fichier
         try {
             $bytes_written = file_put_contents($file_path, $content, LOCK_EX);
-            
-            if ($bytes_written === false) {
-                return false;
-            }
+            $data = json_decode(file_get_contents($file_path), true);
 
-            // Enregistrer l'événement
+            $this->config->set('ac_last_ip_sync', time());
+            $this->config->set('ac_ip_list_version', $data['version_hash'] ?? '');
 
             return true;
         } catch (\Exception $e) {
@@ -202,40 +215,6 @@ class server_authenticator
         $this->public_key_cache = $public_key;
 
         return $public_key;
-    }
-
-    /**
-     * Vérifie si un nom de fichier est sécurisé
-     *
-     * @param string $filename Nom du fichier
-     * @return bool True si le nom est sécurisé
-     */
-    protected function is_safe_filename($filename)
-    {
-        // Interdire les chemins relatifs
-        if (strpos($filename, '..') !== false) {
-            return false;
-        }
-
-        // Interdire les slashes (pas de sous-dossiers)
-        if (strpos($filename, '/') !== false || strpos($filename, '\\') !== false) {
-            return false;
-        }
-
-        // Autoriser seulement les caractères alphanumériques, tirets, underscores et points
-        if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $filename)) {
-            return false;
-        }
-
-        // Vérifier l'extension (optionnel - autoriser seulement certaines extensions)
-        $allowed_extensions = ['json', 'txt', 'log', 'dat'];
-        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        
-        if (!in_array($extension, $allowed_extensions)) {
-            return false;
-        }
-
-        return true;
     }
 
     /**

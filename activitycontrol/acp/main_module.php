@@ -45,8 +45,18 @@ class main_module
                         trigger_error('FORM_INVALID');
                     }
                     
-                    @set_time_limit(300);
-                    @ini_set('max_execution_time', '300');
+                    @set_time_limit(500);
+                    @ini_set('max_execution_time', '500');
+                    
+                    // S'enregistrer d'abord si jamais synchronisé
+                    if ($config['ac_last_ip_sync'] == 0) {
+                        $registration_service = $phpbb_container->get('linkguarder.activitycontrol.server_registration');
+                        $reg_result = $registration_service->register_to_server();
+                        
+                        if (!$reg_result['success']) {
+                            trigger_error('Registration failed: ' . $reg_result['message'] . adm_back_link($this->u_action), E_USER_WARNING);
+                        }
+                    }
                     
                     $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
                     $result = $ip_ban_sync->sync();
@@ -70,13 +80,22 @@ class main_module
                     
                     $config->set('ac_enable_ip_reporting', $request->variable('ac_enable_ip_reporting', 0));
                     
-                    // IP synchronization is always enabled - removed toggle
                     $config->set('ac_ip_sync_interval', $request->variable('ac_ip_sync_interval', 3600));
                     $config->set('ac_ban_reason', $request->variable('ac_ban_reason', ''));
 
                     trigger_error($user->lang('ACP_ACTIVITY_CONTROL_SETTING_SAVED') . adm_back_link($this->u_action));
                 }
-
+                    
+                // S'enregistrer d'abord si jamais synchronisé
+                if ($config['ac_last_ip_sync'] == 0) {
+                    $registration_service = $phpbb_container->get('linkguarder.activitycontrol.server_registration');
+                    $reg_result = $registration_service->register_to_server();
+                    
+                    if (!$reg_result['success']) {
+                        trigger_error('Registration failed: ' . $reg_result['message'] . adm_back_link($this->u_action), E_USER_WARNING);
+                    }
+                }
+                
                 // Test de connexion au serveur RogueBB
                 $ip_ban_sync = $phpbb_container->get('linkguarder.activitycontrol.ip_ban_sync');
                 $connection_test = $ip_ban_sync->test_connection();
@@ -84,8 +103,30 @@ class main_module
                 $status_color = $connection_test['connected'] ? 'green' : 'red';
                 $status_icon = $connection_test['connected'] ? '✓' : '✗';
                 $status_text = $connection_test['connected'] 
-                    ? sprintf('Connected to RogueBB (%dms)', $connection_test['latency'])
+                    ? sprintf('Connected to central server (%dms)', $connection_test['latency'])
                     : 'Disconnected - ' . $connection_test['message'];
+                
+                // Déterminer le statut de synchronisation
+                $sync_status = 'Never synchronized';
+                $sync_color = 'red';
+                $sync_icon = '✗';
+                $last_sync_date = $user->lang('NEVER');
+                
+                if ($config['ac_last_ip_sync'] > 0) {
+                    $last_sync_age = time() - $config['ac_last_ip_sync'];
+                    $sync_interval = (int) $config['ac_ip_sync_interval'];
+                    $last_sync_date = $user->format_date($config['ac_last_ip_sync']);
+                    
+                    if ($last_sync_age < $sync_interval) {
+                        $sync_status = 'Synchronized';
+                        $sync_color = 'green';
+                        $sync_icon = '✓';
+                    } else {
+                        $sync_status = 'Outdated';
+                        $sync_color = 'orange';
+                        $sync_icon = '⚠';
+                    }
+                }
 
                 $template->assign_vars([
                     'U_ACTION'                     => $this->u_action,
@@ -104,6 +145,11 @@ class main_module
                     'AC_SERVER_STATUS_COLOR'       => $status_color,
                     'AC_SERVER_STATUS_ICON'        => $status_icon,
                     'AC_SERVER_STATUS_TEXT'        => $status_text,
+                    
+                    'AC_SYNC_STATUS_COLOR'         => $sync_color,
+                    'AC_SYNC_STATUS_ICON'          => $sync_icon,
+                    'AC_SYNC_STATUS_TEXT'          => $sync_status,
+                    'AC_LAST_SYNC_DATE'            => $last_sync_date,
                 ]);
                 break;
             case 'logs':

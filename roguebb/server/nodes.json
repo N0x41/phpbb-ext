@@ -1,35 +1,12 @@
 {
-  "last_updated": 1761609024.880461,
+  "last_updated": 1761661247.3353767,
   "nodes": [
     {
-      "name": "Test Forum",
+      "name": "yourdomain.com",
       "url": "http://localhost:8080/forum",
       "enabled": true,
-      "registered_at": 1761606509.6501641
-    },
-    {
-      "name": "Second Forum",
-      "url": "http://example.com/forum",
-      "enabled": true,
-      "registered_at": 1761606565.1528544
-    },
-    {
-      "name": "Test Node",
-      "url": "http://test123.com/forum",
-      "enabled": true,
-      "registered_at": 1761606691.808535
-    },
-    {
-      "name": "Secure Forum",
-      "url": "http://secure-test.com/forum",
-      "enabled": true,
-      "registered_at": 1761606732.6652987
-    },
-    {
-      "name": "yourdomain.com",
-      "url": "http://localhost/forum",
-      "enabled": true,
-      "registered_at": 1761609024.880452
+      "registered_at": 1761661239.186992,
+      "ip_version": "14757d525e2988ff"
     }
   ]
 }

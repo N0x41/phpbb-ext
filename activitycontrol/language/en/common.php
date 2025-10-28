@@ -104,9 +104,9 @@ $lang = array_merge($lang, [
     
     // Synchronisation IP
     'AC_ENABLE_IP_SYNC'             => 'IP Synchronization',
-    'AC_IP_SYNC_STATUS'             => 'IP Sync Status',
+    'AC_IP_SYNC_STATUS'             => 'Synchronization status',
     'AC_IP_SYNC_ALWAYS_ACTIVE'      => 'Always Active (Automatic)',
-    'AC_IP_SYNC_ALWAYS_ACTIVE_EXPLAIN' => 'IP synchronization is always enabled. When you activate this extension, your forum automatically registers with the RogueBB server and receives updates via the secure /notify endpoint with RSA signature verification.',
+    'AC_IP_SYNC_ALWAYS_ACTIVE_EXPLAIN' => 'IP synchronization is always enabled. When you activate this extension, your forum automatically registers with the server and receives updates via the secure /notify endpoint with RSA signature verification.',
     'AC_IP_SYNC_INTERVAL'           => 'Synchronization interval (seconds)',
     'AC_IP_SYNC_INTERVAL_EXPLAIN'   => 'How often to check for updates from the central server (default: 3600 = 1 hour)',
     'AC_BAN_REASON'                 => 'Default ban reason',
@@ -117,17 +117,17 @@ $lang = array_merge($lang, [
     // Logs synchronisation
     'LOG_AC_IP_SYNC_SUCCESS'        => 'IP sync completed: %d added, %d removed, %d total',
     'LOG_AC_IP_SYNC_FAILED'         => 'IP sync failed: %s',
-    'LOG_AC_REGISTERED_SUCCESS'     => 'Successfully registered to RogueBB server: %s',
-    'LOG_AC_REGISTERED_FAILED'      => 'Failed to register to RogueBB server: %s',
-    'LOG_AC_REGISTERED_EXCEPTION'   => 'Exception during RogueBB registration: %s',
+    'LOG_AC_REGISTERED_SUCCESS'     => 'Successfully registered to server: %s',
+    'LOG_AC_REGISTERED_FAILED'      => 'Failed to register to server: %s',
+    'LOG_AC_REGISTERED_EXCEPTION'   => 'Exception during registration: %s',
     
     // Webhook notifications
     'LOG_AC_WEBHOOK_RECEIVED'       => 'Webhook notification received: version %d, %d IPs, at %s',
     'LOG_AC_REMOTE_SYNC_TRIGGERED'  => 'Remote sync triggered by server: %d added, %d removed, %d total',
     'AC_WEBHOOK_URL'                => 'Webhook URL',
-    'AC_WEBHOOK_URL_EXPLAIN'        => 'This URL should be configured in the RogueBB server to receive automatic notifications when the IP list is updated.',
+    'AC_WEBHOOK_URL_EXPLAIN'        => 'This URL should be configured in the server to receive automatic notifications when the IP list is updated.',
     'AC_NODE_QUERY_URL'             => 'Node Query URL',
-    'AC_NODE_QUERY_URL_EXPLAIN'     => 'This URL allows the RogueBB server to query this node for status, statistics, and trigger actions.',
+    'AC_NODE_QUERY_URL_EXPLAIN'     => 'This URL allows the server to query this node for status, statistics, and trigger actions.',
     
     // Bouton de synchronisation manuelle
     'AC_SYNC_NOW_TITLE'             => 'Manual synchronization',

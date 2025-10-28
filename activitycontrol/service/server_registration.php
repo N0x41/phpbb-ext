@@ -24,6 +24,9 @@ class server_registration
 	/** @var string */
 	protected $ext_path;
 
+	/** @var \phpbb\db\driver\driver_interface */
+	protected $db;
+
 	/** @var string URL du serveur RogueBB */
 	protected $server_url;
 
@@ -33,15 +36,17 @@ class server_registration
 	 * @param \phpbb\config\config $config
 	 * @param \phpbb\user $user
 	 * @param string $ext_path
+	 * @param \phpbb\db\driver\driver_interface $db
 	 */
-	public function __construct(\phpbb\config\config $config, \phpbb\user $user, $ext_path)
+	public function __construct(\phpbb\config\config $config, \phpbb\user $user, $ext_path, \phpbb\db\driver\driver_interface $db)
 	{
 		$this->config = $config;
 		$this->user = $user;
 		$this->ext_path = $ext_path;
+		$this->db = $db;
 		
 		// Récupérer l'URL du serveur depuis la config
-		$this->server_url = $this->config['ac_central_server_url'] ?? 'http://localhost:5000';
+		$this->server_url = $this->config['ac_central_server_url'];
 	}
 
 	/**
@@ -117,14 +122,28 @@ class server_registration
 	 */
 	protected function get_forum_url()
 	{
-		// Construire l'URL du forum à partir de la configuration
-		$board_url = $this->config['server_protocol'] . $this->config['server_name'];
+		// Lire directement depuis la DB pour éviter les problèmes de cache
+		$sql = 'SELECT config_name, config_value 
+				FROM ' . CONFIG_TABLE . " 
+				WHERE config_name IN ('server_protocol', 'server_name', 'server_port', 'script_path')";
+		$result = $this->db->sql_query($sql);
+		
+		$config_values = [];
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$config_values[$row['config_name']] = $row['config_value'];
+		}
+		$this->db->sql_freeresult($result);
+		
+		// Construire l'URL du forum
+		$board_url = $config_values['server_protocol'] . $config_values['server_name'];
 
-		if ($this->config['server_port'] && $this->config['server_port'] != 80 && $this->config['server_port'] != 443) {
-			$board_url .= ':' . $this->config['server_port'];
+		if (isset($config_values['server_port']) && $config_values['server_port'] != 80 && $config_values['server_port'] != 443) 
+		{
+			$board_url .= ':' . $config_values['server_port'];
 		}
 
-		$board_url .= $this->config['script_path'];
+		$board_url .= $config_values['script_path'];
 
 		return rtrim($board_url, '/');
 	}
@@ -191,22 +210,10 @@ class server_registration
 
 		@file_put_contents($log_file, $log_entry, FILE_APPEND);
 	}
-
-	/**
-	 * Définit l'URL du serveur RogueBB
-	 *
-	 * @param string $url
-	 */
 	public function set_server_url($url)
 	{
 		$this->server_url = $url;
 	}
-
-	/**
-	 * Obtient l'URL du serveur RogueBB
-	 *
-	 * @return string
-	 */
 	public function get_server_url()
 	{
 		return $this->server_url;
