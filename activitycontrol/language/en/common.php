@@ -120,6 +120,7 @@ $lang = array_merge($lang, [
     'LOG_AC_REGISTERED_SUCCESS'     => 'Successfully registered to server: %s',
     'LOG_AC_REGISTERED_FAILED'      => 'Failed to register to server: %s',
     'LOG_AC_REGISTERED_EXCEPTION'   => 'Exception during registration: %s',
+    'LOG_AC_IP_LIST_UPDATED'        => '<strong>%1$s</strong> updated IP list to version: <strong>%2$s</strong>',
     
     // Webhook notifications
     'LOG_AC_WEBHOOK_RECEIVED'       => 'Webhook notification received: version %d, %d IPs, at %s',

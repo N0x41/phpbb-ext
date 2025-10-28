@@ -42,13 +42,17 @@
 		<dt><label>{L_AC_IP_SYNC_STATUS}</label></dt>
 		<dd>
 			<span style="color: {AC_SERVER_STATUS_COLOR}; font-weight: bold;">{AC_SERVER_STATUS_ICON} {AC_SERVER_STATUS_TEXT}</span>
+			{AC_CONNECTION_STATUS}<br>
+			<span style="color: {AC_SYNC_STATUS_COLOR}; font-weight: bold;">{AC_SYNC_STATUS_ICON} {AC_SYNC_STATUS_TEXT}</span>
 		</dd>
 	</dl>
 	<dl>
-		<dt><label>Synchronization status</label></dt>
-		<dd>
-			<span style="color: {AC_SYNC_STATUS_COLOR}; font-weight: bold;">{AC_SYNC_STATUS_ICON} {AC_SYNC_STATUS_TEXT}</span>
-		</dd>
+		<dt><label>Last synchronization</label></dt>
+		<dd><strong>{AC_LAST_SYNC_DATE}</strong></dd>
+	</dl>
+	<dl>
+		<dt><label>{L_AC_IP_LIST_VERSION}</label></dt>
+		<dd><strong>{AC_IP_LIST_VERSION}</strong></dd>
 	</dl>
 	<dl>
 		<dt><label for="ac_ip_sync_interval">{L_AC_IP_SYNC_INTERVAL}</label><br><span>{L_AC_IP_SYNC_INTERVAL_EXPLAIN}</span></dt>
@@ -57,14 +61,6 @@
 	<dl>
 		<dt><label for="ac_ban_reason">{L_AC_BAN_REASON}</label><br><span>{L_AC_BAN_REASON_EXPLAIN}</span></dt>
 		<dd><input name="ac_ban_reason" type="text" id="ac_ban_reason" value="{AC_BAN_REASON}" size="50" /></dd>
-	</dl>
-	<dl>
-		<dt><label>{L_AC_LAST_IP_SYNC}</label></dt>
-		<dd><strong>{AC_LAST_IP_SYNC}</strong></dd>
-	</dl>
-	<dl>
-		<dt><label>{L_AC_IP_LIST_VERSION}</label></dt>
-		<dd><strong>{AC_IP_LIST_VERSION}</strong></dd>
 	</dl>
 	<dl>
 		<dt><label>{L_AC_SYNC_NOW_TITLE}</label><br><span>{L_AC_SYNC_NOW_EXPLAIN}</span></dt>

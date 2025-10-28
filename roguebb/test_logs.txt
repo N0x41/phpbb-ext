@@ -1,0 +1,2 @@
+Test file for logging validation
+This should NOT appear in phpBB logs (only reported_ips.json updates should be logged)

@@ -94,13 +94,16 @@ class server_authenticator
      * @param string $token Jeton reçu
      * @param string $signature Signature du jeton
      * @param int $max_age Âge maximum du jeton en secondes (défaut: 300s = 5min)
+     * @param string $filename Nom du fichier concerné (pour les logs)
      * @return bool True si le jeton est valide
      */
-    public function verify_token($token, $signature, $max_age = 300)
+    public function verify_token($token, $signature, $max_age = 300, $filename = '')
     {
         // Vérifier la signature
         if (!$this->verify_signature($token, $signature)) {
-            $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_SIGNATURE_FAILED', time());
+            $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_SIGNATURE_FAILED', time(), [
+                $filename
+            ]);
             return false;
         }
 
@@ -108,9 +111,7 @@ class server_authenticator
         $token_data = json_decode($token, true);
         if (!$token_data || !isset($token_data['timestamp']) || !isset($token_data['server_id'])) {
             $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_INVALID_FORMAT', time(), [
-                'has_data' => $token_data ? 'yes' : 'no',
-                'has_timestamp' => isset($token_data['timestamp']) ? 'yes' : 'no',
-                'has_server_id' => isset($token_data['server_id']) ? 'yes' : 'no'
+                $filename
             ]);
             return false;
         }
@@ -121,19 +122,16 @@ class server_authenticator
         
         if ($token_time > $current_time) {
             $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_FUTURE', time(), [
-                'token_time' => $token_time,
-                'current_time' => $current_time,
-                'diff' => $token_time - $current_time
+                $filename,
+                $token_time - $current_time
             ]);
             return false;
         }
 
         if (($current_time - $token_time) > $max_age) {
             $this->log->add('critical', ANONYMOUS, '', 'AC_AUTH_TOKEN_EXPIRED', time(), [
-                'token_time' => $token_time,
-                'current_time' => $current_time,
-                'age' => $current_time - $token_time,
-                'max_age' => $max_age
+                $filename,
+                $current_time - $token_time
             ]);
             return false;
         }
@@ -145,8 +143,7 @@ class server_authenticator
         //     return false;
         // }
 
-        // Tout est OK
-        $this->log->add('admin', ANONYMOUS, '', 'AC_AUTH_TOKEN_VALID', time());
+        // Tout est OK - Ne pas logger (trop verbeux)
         return true;
     }
 
@@ -161,8 +158,8 @@ class server_authenticator
      */
     public function create_authenticated_file($filename, $content, $token, $signature)
     {
-        // Vérifier l'authentification
-        if (!$this->verify_token($token, $signature)) {
+        // Vérifier l'authentification en passant le nom du fichier
+        if (!$this->verify_token($token, $signature, 300, $filename)) {
             return false;
         }
 

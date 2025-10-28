@@ -42,3 +42,9 @@ composer.lock
 # Tests
 phpunit.xml
 tests/tmp/
+
+sync_dev.sh
+sync_to_server.sh
+test_authentication.php
+test_auto_registration.php
+todo

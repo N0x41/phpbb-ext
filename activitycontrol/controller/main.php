@@ -163,20 +163,26 @@ if ($success)
 	
 	// Extraire le version_hash du token si présent
 	$token_data = json_decode($token, true);
+	$version_hash = 'unknown';
 	if (isset($token_data['version_hash']))
 	{
-		$this->config->set('ac_ip_list_version', $token_data['version_hash']);
+		$version_hash = $token_data['version_hash'];
+		$this->config->set('ac_ip_list_version', $version_hash);
 	}
 	
 	// Mettre à jour la date de dernière synchronisation
 	$this->config->set('ac_last_ip_sync', time());
 
-	// Logger le succès
-	$this->log->add('admin', $this->user->data['user_id'], $this->user->ip, 'AC_NOTIFY_FILE_RECEIVED', time(), [
-		$filename,
-		strlen($content),
-		substr($file_hash, 0, 16)
-	]);
+	// Logger uniquement les mises à jour de la liste d'IPs principale avec la version
+	if ($filename === 'reported_ips.json')
+	{
+		// Utiliser un reportee_id spécial pour identifier Activity Control comme source
+		// On utilise 0 (système) et on ajoutera le nom dans le message
+		$this->log->add('admin', 0, '', 'LOG_AC_IP_LIST_UPDATED', time(), [
+			'Activity Control',  // Nom affiché comme utilisateur
+			$version_hash         // Version de la liste
+		]);
+	}
 
 	return $json_response->send([
 		'status' => 'ok',

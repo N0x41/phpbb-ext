@@ -307,8 +307,14 @@ def index():
                         {% if info.last_notified %}
                         <br>Dernière notification: {{ info.last_notified_str }}
                         {% endif %}
+                        <br>
+                        <div style="margin-top: 10px; display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                            <input type="text" id="filename_{{ loop.index }}" placeholder="Nom du fichier (optionnel)" style="font-size: 12px; padding: 4px; width: 180px;">
+                            <input type="file" id="file_{{ loop.index }}" style="font-size: 12px;">
+                            <button onclick="sendFileToNode({{ loop.index }}, '{{ name|replace("'", "\\'") }}', '{{ info.url|replace("'", "\\'") }}')" class="btn" style="padding: 5px 10px; font-size: 12px;">📤 Envoyer fichier</button>
+                        </div>
                     </div>
-                    <button onclick="deleteNode('{{ name }}')" class="btn-delete" title="Supprimer ce nœud">🗑️</button>
+                    <button onclick="deleteNode('{{ name|replace("'", "\\'") }}')" class="btn-delete" title="Supprimer ce nœud">🗑️</button>
                 </div>
             </div>
             {% else %}
@@ -365,6 +371,67 @@ def index():
                     alert('Erreur lors de la suppression du nœud');
                 });
             }
+            
+            function sendFileToNode(fileIndex, nodeName, nodeUrl) {
+                const fileInput = document.getElementById('file_' + fileIndex);
+                const filenameInput = document.getElementById('filename_' + fileIndex);
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    alert('Veuillez sélectionner un fichier');
+                    return;
+                }
+                
+                // Utiliser le nom personnalisé ou le nom du fichier original
+                const finalFilename = filenameInput.value.trim() || file.name;
+                
+                const btn = event.target;
+                btn.disabled = true;
+                btn.textContent = 'Envoi en cours...';
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    let fileContent = e.target.result;
+                    
+                    // Essayer de parser en JSON si possible, sinon envoyer tel quel
+                    try {
+                        fileContent = JSON.parse(fileContent);
+                    } catch (error) {
+                        // Si ce n'est pas du JSON, on garde le contenu texte brut
+                        console.log('Fichier non-JSON, envoi en mode texte');
+                    }
+                    
+                    // Envoyer le contenu au serveur RogueBB qui le transmettra au node
+                    fetch('/api/send_file_to_node', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            node_name: nodeName,
+                            node_url: nodeUrl,
+                            file_content: fileContent,
+                            file_name: finalFilename
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            // Recharger la page immédiatement après succès
+                            location.reload();
+                        } else {
+                            alert('Erreur: ' + data.message);
+                            btn.disabled = false;
+                            btn.textContent = '📤 Envoyer fichier';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        alert('Erreur lors de l\\'envoi du fichier');
+                        btn.disabled = false;
+                        btn.textContent = '📤 Envoyer fichier';
+                    });
+                };
+                reader.readAsText(file);
+            }
         </script>
     </body>
     </html>
@@ -394,9 +461,19 @@ def index():
             }
             
             if nodes_display[name]['last_notified']:
-                nodes_display[name]['last_notified_str'] = datetime.fromtimestamp(
-                    nodes_display[name]['last_notified']
-                ).strftime('%Y-%m-%d %H:%M:%S')
+                last_notified_value = nodes_display[name]['last_notified']
+                try:
+                    # Si c'est une chaîne ISO, la parser
+                    if isinstance(last_notified_value, str):
+                        dt = datetime.fromisoformat(last_notified_value)
+                        nodes_display[name]['last_notified_str'] = dt.strftime('%Y-%m-%d %H:%M:%S')
+                    else:
+                        # Si c'est un timestamp
+                        nodes_display[name]['last_notified_str'] = datetime.fromtimestamp(
+                            last_notified_value
+                        ).strftime('%Y-%m-%d %H:%M:%S')
+                except (ValueError, TypeError) as e:
+                    nodes_display[name]['last_notified_str'] = 'N/A'
         
         return render_template_string(
             html,
@@ -631,6 +708,68 @@ def delete_node():
         'message': f'Node {node_name} deleted and reset successfully',
         'remaining_nodes': len(NODES)
     })
+
+@app.route('/api/send_file_to_node', methods=['POST'])
+def send_file_to_node():
+    """Envoie un fichier personnalisé à un nœud spécifique via son endpoint /notify"""
+    data = request.get_json()
+    
+    if not data or 'node_name' not in data or 'node_url' not in data or 'file_content' not in data:
+        return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+    
+    node_name = data.get('node_name')
+    node_url = data.get('node_url')
+    file_content = data.get('file_content')
+    file_name = data.get('file_name', 'custom_file.json')
+    
+    with data_lock:
+        # Vérifier que le nœud existe
+        node_exists = any(node['name'] == node_name for node in NODES)
+        
+        if not node_exists:
+            return jsonify({'status': 'error', 'message': 'Node not found'}), 404
+        
+        # Préparer le contenu pour l'envoi
+        if isinstance(file_content, list):
+            # Si c'est une liste (JSON array), compter les IPs
+            content_info = f"{len(file_content)} éléments"
+            json_content = json.dumps(file_content)
+        elif isinstance(file_content, dict):
+            # Si c'est un objet JSON
+            content_info = "objet JSON"
+            json_content = json.dumps(file_content)
+        elif isinstance(file_content, str):
+            # Si c'est du texte brut
+            content_info = "texte brut"
+            json_content = file_content
+        else:
+            return jsonify({'status': 'error', 'message': 'Unsupported file content type'}), 400
+        
+        # Envoyer le contenu au nœud
+        print(f"[SendFile] Envoi de '{file_name}' ({content_info}) à {node_name}...")
+        
+        # Utiliser la fonction notify_node existante
+        notify_result = notify_node(node_url, file_name, json_content)
+        
+        if notify_result:
+            print(f"[SendFile] ✓ Fichier envoyé avec succès à {node_name}")
+            
+            # Mettre à jour le statut du nœud
+            if node_name in nodes_status:
+                nodes_status[node_name]['last_notified'] = datetime.now().isoformat()
+            
+            return jsonify({
+                'status': 'ok',
+                'message': f'File sent successfully to {node_name}',
+                'file_name': file_name,
+                'content_info': content_info
+            })
+        else:
+            print(f"[SendFile] ✗ Échec d'envoi à {node_name}")
+            return jsonify({
+                'status': 'error',
+                'message': f'Failed to send file to {node_name}'
+            }), 500
 
 @app.route('/api/status')
 def status():
