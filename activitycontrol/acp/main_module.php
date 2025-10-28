@@ -104,7 +104,6 @@ class main_module
                     'AC_ROGUEBB_STATUS_COLOR'      => $status_color,
                     'AC_ROGUEBB_STATUS_ICON'       => $status_icon,
                     'AC_ROGUEBB_STATUS_TEXT'       => $status_text,
-                    'AC_ROGUEBB_SERVER_URL'        => $connection_test['server_url'],
                 ]);
                 break;
             case 'logs':
