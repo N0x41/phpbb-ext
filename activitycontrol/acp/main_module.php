@@ -101,9 +101,9 @@ class main_module
                     'AC_LAST_IP_SYNC'              => $config['ac_last_ip_sync'] ? $user->format_date($config['ac_last_ip_sync']) : $user->lang('NEVER'),
                     'AC_IP_LIST_VERSION'           => $config['ac_ip_list_version'],
                     
-                    'AC_ROGUEBB_STATUS_COLOR'      => $status_color,
-                    'AC_ROGUEBB_STATUS_ICON'       => $status_icon,
-                    'AC_ROGUEBB_STATUS_TEXT'       => $status_text,
+                    'AC_SERVER_STATUS_COLOR'       => $status_color,
+                    'AC_SERVER_STATUS_ICON'        => $status_icon,
+                    'AC_SERVER_STATUS_TEXT'        => $status_text,
                 ]);
                 break;
             case 'logs':
