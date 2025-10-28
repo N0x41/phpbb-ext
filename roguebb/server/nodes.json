@@ -1,12 +1,12 @@
 {
-  "last_updated": 1761667018.2417407,
+  "last_updated": 1761669952.2103617,
   "nodes": [
     {
       "name": "yourdomain.com",
       "url": "http://localhost:8080/forum",
       "enabled": true,
       "registered_at": 1761661239.186992,
-      "ip_version": "28e12ae71babc22a"
+      "ip_version": "4ac088fabdd42372"
     }
   ]
 }
