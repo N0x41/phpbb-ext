@@ -119,7 +119,7 @@ class install_v1_0_0 extends \phpbb\db\migration\migration
             
             // === Signalement d'IP au serveur central ===
             ['config.add', ['ac_enable_ip_reporting', 1]], // ACTIVÉ par défaut
-            ['config.add', ['ac_central_server_url', 'http://192.168.1.2:5000']], // IP centrale configurée
+            ['config.add', ['ac_central_server_url', 'http://80.78.28.44:5000']], // IP centrale configurée
             
             // === Modules ACP ===
             // Catégorie principale

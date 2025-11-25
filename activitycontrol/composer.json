@@ -3,8 +3,8 @@
     "type": "phpbb-extension",
     "description": "Contrôle l'activité des utilisateurs avec signalement d'IP et synchronisation centralisée.",
     "homepage": "https://www.linkguarder.team",
-    "version": "1.0.0",
-    "time": "2025-10-24",
+    "version": "1.0.2",
+    "time": "2025-11-25",
     "license": "GPL-2.0-only",
     "authors": [
         {
